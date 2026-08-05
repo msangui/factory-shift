@@ -3,7 +3,9 @@ import { hourInTz } from "@/lib/util";
 import { log } from "@/lib/logger";
 
 export const dynamic = "force-dynamic";
-export const maxDuration = 300;
+// Vercel Hobby caps functions at 60s. This route is only for short manual
+// `?force=1` tests; scheduled generation runs in GitHub Actions (no timeout).
+export const maxDuration = 60;
 
 /** The target local hour for the daily send. */
 const TARGET_HOUR_ET = 6;
