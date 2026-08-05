@@ -244,3 +244,20 @@ export async function listHolds(): Promise<HoldRow[]> {
   const sql = getSql();
   return (await sql`SELECT * FROM holds ORDER BY issue_date DESC`) as HoldRow[];
 }
+
+/**
+ * Manually ship a held issue after human review (spec: "may ship manually").
+ * Flips status held → shipped (or short_form_shipped) so it enters the archive.
+ * Returns the new status, or null if there was no held issue for that date.
+ */
+export async function shipHeldIssue(date: string): Promise<IssueStatus | null> {
+  const sql = getSql();
+  const rows = (await sql`
+    UPDATE issues
+    SET status = CASE WHEN is_short_form THEN 'short_form_shipped' ELSE 'shipped' END,
+        shipped_at = NOW()
+    WHERE issue_date = ${date} AND status = 'held'
+    RETURNING status
+  `) as { status: IssueStatus }[];
+  return rows[0]?.status ?? null;
+}

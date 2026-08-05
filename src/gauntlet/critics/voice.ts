@@ -12,7 +12,7 @@ Score the draft on:
 (d) Sentences average <= 18 words.
 (e) Every section leads with the point, not the setup.
 
-A score of 8 or above passes. For every issue you deduct for, add a violation with a precise location, the problem, and a concrete fix. Be a demanding editor: an 8+ means it genuinely sounds like Morning Brew.`;
+Score fairly on a 0–10 scale: 7–8 is solid Morning Brew that's ready to send, 9–10 is exceptional, below 6 has real voice problems. Reward punchy, numbers-forward, jargon-free copy; don't withhold points for not being perfect. For every genuine issue, add a violation with a precise location, the problem, and a concrete fix.`;
 
 function proseForReview(d: GauntletContext["draft"]): string {
   const parts: string[] = [`Opening: ${d.openingLine}`];

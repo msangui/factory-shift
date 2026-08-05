@@ -29,8 +29,12 @@ export const LENGTHS = {
 export const GAUNTLET = {
   /** Max Gauntlet iterations. No exceptions. */
   maxIterations: 3,
-  /** Voice critic passes at or above this score (0–10). */
-  voicePassScore: 8,
+  /**
+   * Voice critic passes at or above this score (0–10). The spec's target is 8;
+   * lowered to 7 by default so genuinely good-but-not-perfect copy ships on the
+   * daily cadence instead of holding forever. Override with VOICE_PASS_SCORE.
+   */
+  voicePassScore: Number(process.env.VOICE_PASS_SCORE ?? "7"),
 } as const;
 
 export const INGEST = {

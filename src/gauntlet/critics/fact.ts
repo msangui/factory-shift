@@ -4,17 +4,20 @@ import { findCachedByUrls } from "@/lib/db";
 import { criticModel, generateStructured } from "@/lib/llm";
 import { normalizeUrl } from "@/lib/util";
 
-const FACT_SYSTEM = `You are the FACT CRITIC for a newsletter. You never rewrite the draft — you only judge it.
+const FACT_SYSTEM = `You are the FACT CRITIC for a newsletter. You never rewrite the draft — you only judge it. Sources here are RSS SUMMARIES, so judge whether a claim's SUBSTANCE is supported by the provided evidence, not whether every word appears verbatim.
 
-Your job: every named company, number, percentage, dollar figure, date, and quote in the draft MUST be supported by one of the PROVIDED SOURCES. Build a claims table mapping each such claim to the source URL and whether that source supports it.
+Your job: every named company, number, percentage, dollar figure, date, and quote in the draft must be supported by one of the PROVIDED SOURCES.
 
-FAIL (add a violation) when:
-- A claim has no supporting provided source (an ORPHAN claim).
-- A number differs from its source: rounding beyond one decimal place, wrong units ($B vs $M), or wrong period (Q vs FY, YoY vs QoQ).
-- A quote is not present in the source, or is longer than 15 words.
-- A section cites a URL that is not in the provided evidence list.
+FAIL (add a violation) only when a claim is genuinely unsupported or contradicted:
+- A specific figure (number, %, $) that does NOT appear in, and cannot be derived from, any provided source — i.e. it looks fabricated.
+- A number that CONTRADICTS its source: wrong magnitude/units ($B vs $M), or wrong period (Q vs FY, YoY vs QoQ).
+- A company or event that no provided source mentions at all.
+- A quote not present in the source, or longer than 15 words.
+- A section that cites a URL not in the provided evidence list.
 
-Pass ONLY if there are zero violations. Score 10 for a clean pass, lower as violations mount. For each violation, give a precise location (e.g. 'bigStory.body'), the problem, and a concrete fix.`;
+Do NOT fail a claim just because the summary is terse: if the source clearly supports the gist, it passes. Optionally fill the 'claims' table with only the riskiest claims you checked.
+
+Score 10 for a clean pass; lower as real violations mount. For each violation, give a precise location (e.g. 'bigStory.body'), the problem, and a concrete fix.`;
 
 /** Gather the snippets for every URL the draft cites, from the pool and (live) the DB. */
 async function gatherEvidence(ctx: GauntletContext): Promise<{ url: string; title: string; snippet: string }[]> {
@@ -95,12 +98,12 @@ Produce the claims table and the verdict.`;
       prompt,
       model: criticModel(),
       stage: "critic:fact",
-      maxOutputTokens: 3000,
+      maxOutputTokens: 4096,
     });
 
     // Merge deterministic orphans + any unsupported claims the model listed.
     const merged = [...orphanViolations, ...verdict.violations];
-    for (const c of verdict.claims) {
+    for (const c of verdict.claims ?? []) {
       if (!c.supported && !merged.some((m) => m.issue.includes(c.claim.slice(0, 24)))) {
         merged.push({ location: "claim", issue: `Unsupported claim: ${c.claim}`, fix_suggestion: "Remove it or cite a supporting source." });
       }

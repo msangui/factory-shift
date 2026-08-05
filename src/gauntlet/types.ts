@@ -20,7 +20,11 @@ export const verdictSchema = z.object({
 });
 export type Verdict = z.infer<typeof verdictSchema>;
 
-/** Fact critic returns an extra claims table (claim → source URL → supported). */
+/**
+ * Fact critic returns an optional claims table (claim → source URL → supported).
+ * Optional so a long table can't truncate the structured output into an invalid
+ * object; the pass/fail decision rides on `violations`, not `claims`.
+ */
 export const factVerdictSchema = verdictSchema.extend({
   claims: z
     .array(
@@ -30,7 +34,8 @@ export const factVerdictSchema = verdictSchema.extend({
         supported: z.boolean(),
       }),
     )
-    .describe("Every named company, number, %, $, date, and quote mapped to a source URL."),
+    .optional()
+    .describe("Optional: the riskiest claims mapped to a source URL and whether it supports them."),
 });
 export type FactVerdict = z.infer<typeof factVerdictSchema>;
 

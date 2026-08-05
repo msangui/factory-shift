@@ -4,55 +4,61 @@ import { log } from "@/lib/logger";
 
 const FETCH_TIMEOUT_MS = 10_000;
 
+// Yahoo Finance's chart endpoint responds from datacenter/CI IPs (Stooq blocks
+// them), needs no key, and returns daily closes we can diff for the % change.
 function base(): string {
-  return process.env.QUOTES_BASE_URL ?? "https://stooq.com";
+  return process.env.QUOTES_BASE_URL ?? "https://query1.finance.yahoo.com";
 }
 
-/** YYYYMMDD in UTC. */
-function ymd(d: Date): string {
-  return d.toISOString().slice(0, 10).replace(/-/g, "");
+function num(v: unknown): number | null {
+  return typeof v === "number" && Number.isFinite(v) ? v : null;
 }
 
-/**
- * Stooq daily history CSV for one symbol over a bounded window. Free, keyless,
- * end-of-day. Returns the last two closes so we can compute the % change.
- * Columns: Date,Open,High,Low,Close,Volume.
- */
 async function fetchQuote(symbol: string, name: string): Promise<Quote> {
   const empty: Quote = { symbol, name, previousClose: null, lastClose: null, changePct: null, asOf: null };
-  const now = new Date();
-  const from = new Date(now.getTime() - 16 * 24 * 3_600_000);
-  const url = `${base()}/q/d/l/?s=${symbol.toLowerCase()}.us&d1=${ymd(from)}&d2=${ymd(now)}&i=d`;
+  const url = `${base()}/v8/finance/chart/${encodeURIComponent(symbol)}?range=5d&interval=1d`;
 
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), FETCH_TIMEOUT_MS);
   try {
-    const res = await fetch(url, { signal: controller.signal });
+    const res = await fetch(url, {
+      signal: controller.signal,
+      headers: {
+        // A browser-like UA avoids Yahoo's bot rejection.
+        "user-agent": "Mozilla/5.0 (compatible; MorningShelfBot/0.1)",
+        accept: "application/json",
+      },
+    });
     if (!res.ok) {
       log.warn("quotes.non_ok", { symbol, status: res.status });
       return empty;
     }
-    const csv = (await res.text()).trim();
-    const lines = csv.split(/\r?\n/).filter(Boolean);
-    // Need header + at least two data rows.
-    if (lines.length < 3) return empty;
-    const rows = lines.slice(1).map((l) => l.split(","));
-    const last = rows[rows.length - 1];
-    const prev = rows[rows.length - 2];
-    if (!last || !prev) return empty;
-    const lastClose = Number.parseFloat(last[4] ?? "");
-    const previousClose = Number.parseFloat(prev[4] ?? "");
-    if (!Number.isFinite(lastClose) || !Number.isFinite(previousClose) || previousClose === 0) {
-      return empty;
-    }
+    const json = (await res.json()) as {
+      chart?: { result?: Array<{ meta?: Record<string, unknown>; timestamp?: number[]; indicators?: { quote?: Array<{ close?: (number | null)[] }> } }>; error?: unknown };
+    };
+    const result = json.chart?.result?.[0];
+    if (!result) return empty;
+
+    const meta = result.meta ?? {};
+    const closes = (result.indicators?.quote?.[0]?.close ?? []).filter((c): c is number => num(c) !== null);
+
+    const lastClose = closes.at(-1) ?? num(meta.regularMarketPrice);
+    const previousClose =
+      closes.length >= 2 ? closes[closes.length - 2]! : num(meta.chartPreviousClose) ?? num(meta.previousClose);
+
+    if (lastClose === null || previousClose === null || previousClose === 0) return empty;
+
     const changePct = ((lastClose - previousClose) / previousClose) * 100;
+    const epoch = num(meta.regularMarketTime) ?? result.timestamp?.at(-1) ?? null;
+    const asOf = epoch !== null ? new Date(epoch * 1000).toISOString().slice(0, 10) : null;
+
     return {
       symbol,
       name,
-      previousClose,
-      lastClose,
+      previousClose: Math.round(previousClose * 100) / 100,
+      lastClose: Math.round(lastClose * 100) / 100,
       changePct: Math.round(changePct * 100) / 100,
-      asOf: last[0] ?? null,
+      asOf,
     };
   } catch (err) {
     log.warn("quotes.error", { symbol, error: String(err) });
