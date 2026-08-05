@@ -1,0 +1,67 @@
+name: Daily issue
+
+# Scheduled generation of The Morning Shelf.
+#
+# Why this runs here and not in Vercel: on the Vercel Hobby plan serverless
+# functions cap at 60s, but the Gauntlet pipeline makes 8+ sequential Claude
+# calls and needs longer. GitHub Actions has no such cap. Vercel just hosts the
+# read-only archive; this workflow does the generation and writes to Neon.
+#
+# DST-safe timing: Vercel/GitHub cron is UTC-only. We fire two weekday schedules
+# (10:00 and 11:00 UTC) and only proceed when it is actually 06:00 in New York,
+# so exactly one run generates the issue per weekday across EST/EDT. The
+# pipeline is idempotent per date, so the sibling trigger safely no-ops.
+
+on:
+  schedule:
+    - cron: "0 10 * * 1-5" # 06:00 America/New_York during EDT
+    - cron: "0 11 * * 1-5" # 06:00 America/New_York during EST
+  workflow_dispatch:
+    inputs:
+      force:
+        description: "Regenerate today's issue even if it already exists"
+        type: boolean
+        default: false
+
+# Never let two runs generate the same day's issue concurrently.
+concurrency:
+  group: daily-issue
+  cancel-in-progress: false
+
+jobs:
+  generate:
+    runs-on: ubuntu-latest
+    env:
+      DATABASE_URL: ${{ secrets.DATABASE_URL }}
+      AI_GATEWAY_API_KEY: ${{ secrets.AI_GATEWAY_API_KEY }}
+      MODEL_DRAFTER: ${{ secrets.MODEL_DRAFTER }}
+      MODEL_CRITIC: ${{ secrets.MODEL_CRITIC }}
+      NEXT_PUBLIC_SITE_URL: ${{ secrets.NEXT_PUBLIC_SITE_URL }}
+      PRICE_INPUT_PER_MTOK: ${{ secrets.PRICE_INPUT_PER_MTOK }}
+      PRICE_OUTPUT_PER_MTOK: ${{ secrets.PRICE_OUTPUT_PER_MTOK }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - run: npm ci
+
+      # Idempotent; safe to run every time.
+      - name: Apply database migrations
+        run: npm run migrate
+
+      - name: Generate today's issue
+        run: |
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            npm run pipeline ${{ inputs.force && '-- --force' || '' }}
+          else
+            ET_HOUR="$(TZ=America/New_York date +%H)"
+            if [ "$ET_HOUR" = "06" ]; then
+              npm run pipeline
+            else
+              echo "Not 06:00 ET (now ${ET_HOUR}:00 ET) — skipping this trigger."
+            fi
+          fi
