@@ -1,20 +1,36 @@
-import { generateObject } from "ai";
+import { anthropic } from "@ai-sdk/anthropic";
+import { generateObject, type LanguageModel } from "ai";
 import type { z } from "zod";
 import { log } from "@/lib/logger";
 
 /**
- * Claude via the Vercel AI Gateway.
+ * Claude, two ways:
  *
- * The AI SDK routes a bare `provider/model` string through the AI Gateway when
- * `AI_GATEWAY_API_KEY` is set (or, on Vercel, via OIDC). We never import a
- * provider SDK directly — the gateway is the single egress point, per spec.
+ *  - If `ANTHROPIC_API_KEY` is set, call the Anthropic API **directly** via the
+ *    AI SDK's Anthropic provider. Inference bills to your Anthropic account and
+ *    the Vercel AI Gateway (and its card-on-file requirement) is bypassed.
+ *  - Otherwise, route a bare `provider/model` string through the **Vercel AI
+ *    Gateway** (`AI_GATEWAY_API_KEY`, or OIDC on Vercel) — the original path.
+ *
+ * `MODEL_DRAFTER` / `MODEL_CRITIC` override the model. Use a native Anthropic id
+ * for the direct path (e.g. `claude-sonnet-4-5`); a leading `anthropic/` is
+ * stripped for you. For the Gateway path the provider prefix is added if absent.
  */
-export function drafterModel(): string {
-  return process.env.MODEL_DRAFTER ?? "anthropic/claude-sonnet-4.5";
+const DEFAULT_MODEL = "claude-sonnet-4-5";
+
+function resolveModel(rawId: string): LanguageModel {
+  if (process.env.ANTHROPIC_API_KEY) {
+    return anthropic(rawId.replace(/^anthropic\//, ""));
+  }
+  return rawId.includes("/") ? rawId : `anthropic/${rawId}`;
 }
 
-export function criticModel(): string {
-  return process.env.MODEL_CRITIC ?? "anthropic/claude-sonnet-4.5";
+export function drafterModel(): LanguageModel {
+  return resolveModel(process.env.MODEL_DRAFTER || DEFAULT_MODEL);
+}
+
+export function criticModel(): LanguageModel {
+  return resolveModel(process.env.MODEL_CRITIC || DEFAULT_MODEL);
 }
 
 /** Accumulates token usage per pipeline stage for the per-issue cost estimate. */
@@ -52,7 +68,7 @@ export async function generateStructured<T>(opts: {
   schema: z.ZodType<T>;
   system: string;
   prompt: string;
-  model: string;
+  model: LanguageModel;
   stage: string;
   ledger?: TokenLedger;
   /** Lower for terse verdicts, higher for the full draft. */
@@ -71,7 +87,7 @@ export async function generateStructured<T>(opts: {
   const input = usage?.inputTokens ?? 0;
   const output = usage?.outputTokens ?? 0;
   opts.ledger?.add(opts.stage, input, output);
-  log.debug("llm.generateStructured", { stage: opts.stage, model: opts.model, input, output });
+  log.debug("llm.generateStructured", { stage: opts.stage, input, output });
 
   return object;
 }

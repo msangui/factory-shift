@@ -98,8 +98,9 @@ Copy `.env.example` → `.env.local` and fill in:
 
 | Var | What |
 |-----|------|
-| `AI_GATEWAY_API_KEY` | Claude access via the Vercel AI Gateway. |
-| `MODEL_DRAFTER` / `MODEL_CRITIC` | Gateway model slugs (default `anthropic/claude-sonnet-4.5`). |
+| `ANTHROPIC_API_KEY` | Preferred: direct Anthropic access (bypasses the Vercel AI Gateway and its card requirement). |
+| `AI_GATEWAY_API_KEY` | Fallback: Claude via the Vercel AI Gateway, used only when `ANTHROPIC_API_KEY` is unset. |
+| `MODEL_DRAFTER` / `MODEL_CRITIC` | Model id (default `claude-sonnet-4-5`). |
 | `DATABASE_URL` | Neon pooled connection string. |
 | `CRON_SECRET` | Guards `/api/cron` and `/admin/holds`. |
 | `NEXT_PUBLIC_SITE_URL` | Absolute site URL for the issue's web/archive links. |
