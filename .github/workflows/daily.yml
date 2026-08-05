@@ -33,9 +33,12 @@ jobs:
     runs-on: ubuntu-latest
     env:
       DATABASE_URL: ${{ secrets.DATABASE_URL }}
+      # Direct Anthropic (preferred — bypasses the Vercel AI Gateway card wall).
+      ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+      # Only used if ANTHROPIC_API_KEY is unset (Gateway fallback).
       AI_GATEWAY_API_KEY: ${{ secrets.AI_GATEWAY_API_KEY }}
-      MODEL_DRAFTER: ${{ secrets.MODEL_DRAFTER }}
-      MODEL_CRITIC: ${{ secrets.MODEL_CRITIC }}
+      MODEL_DRAFTER: ${{ secrets.MODEL_DRAFTER || 'claude-sonnet-4-5' }}
+      MODEL_CRITIC: ${{ secrets.MODEL_CRITIC || 'claude-sonnet-4-5' }}
       NEXT_PUBLIC_SITE_URL: ${{ secrets.NEXT_PUBLIC_SITE_URL }}
       PRICE_INPUT_PER_MTOK: ${{ secrets.PRICE_INPUT_PER_MTOK }}
       PRICE_OUTPUT_PER_MTOK: ${{ secrets.PRICE_OUTPUT_PER_MTOK }}
