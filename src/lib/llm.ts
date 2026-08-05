@@ -73,21 +73,37 @@ export async function generateStructured<T>(opts: {
   ledger?: TokenLedger;
   /** Lower for terse verdicts, higher for the full draft. */
   maxOutputTokens?: number;
+  /** How many times to try before giving up (default 2). */
+  attempts?: number;
 }): Promise<T> {
-  const { object, usage } = await generateObject({
-    model: opts.model,
-    schema: opts.schema,
-    system: opts.system,
-    prompt: opts.prompt,
-    maxOutputTokens: opts.maxOutputTokens ?? 4096,
-    // Deterministic-leaning; the drafter overrides via prompt where variety helps.
-    temperature: 0.4,
-  });
+  const maxAttempts = opts.attempts ?? 2;
+  let lastErr: unknown;
 
-  const input = usage?.inputTokens ?? 0;
-  const output = usage?.outputTokens ?? 0;
-  opts.ledger?.add(opts.stage, input, output);
-  log.debug("llm.generateStructured", { stage: opts.stage, input, output });
+  for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+    try {
+      const { object, usage } = await generateObject({
+        model: opts.model,
+        schema: opts.schema,
+        system: opts.system,
+        prompt: opts.prompt,
+        maxOutputTokens: opts.maxOutputTokens ?? 4096,
+        // Deterministic-leaning; the drafter overrides via prompt where variety helps.
+        temperature: 0.4,
+      });
 
-  return object;
+      const input = usage?.inputTokens ?? 0;
+      const output = usage?.outputTokens ?? 0;
+      opts.ledger?.add(opts.stage, input, output);
+      log.debug("llm.generateStructured", { stage: opts.stage, input, output, attempt });
+
+      return object;
+    } catch (err) {
+      // Structured-output coercion can transiently fail (truncation, a stray
+      // wrapper). Retry before letting the error propagate to the caller.
+      lastErr = err;
+      log.warn("llm.retry", { stage: opts.stage, attempt, error: String(err) });
+    }
+  }
+
+  throw lastErr;
 }

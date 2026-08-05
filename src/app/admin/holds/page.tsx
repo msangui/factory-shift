@@ -58,6 +58,18 @@ export default async function HoldsPage({ searchParams }: { searchParams: Promis
             <p style={{ marginTop: 10 }}>
               <a href={`/api/issues/${h.issue_date}/html`} style={{ color: "#b3541e" }}>View the held draft&apos;s HTML →</a>
             </p>
+            <form
+              method="post"
+              action={`/api/issues/${h.issue_date}/ship${key ? `?key=${encodeURIComponent(key)}` : ""}`}
+              style={{ marginTop: 6 }}
+            >
+              <button
+                type="submit"
+                style={{ background: "#1c7c4c", color: "#fff", border: "none", borderRadius: 6, padding: "8px 14px", fontSize: 14, cursor: "pointer" }}
+              >
+                Ship this issue →
+              </button>
+            </form>
           </section>
         ))
       )}
