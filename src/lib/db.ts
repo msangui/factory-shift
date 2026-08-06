@@ -96,16 +96,22 @@ export interface CachedSourceRow {
 
 // ── Issues ───────────────────────────────────────────────────────────────────
 
+// The DATE column comes back from the driver as a JS Date; cast to text so the
+// UI receives a plain 'YYYY-MM-DD' string (rendering a Date as a React child throws).
 export async function getIssue(date: string): Promise<IssueRow | null> {
   const sql = getSql();
-  const rows = (await sql`SELECT * FROM issues WHERE issue_date = ${date}`) as IssueRow[];
+  const rows = (await sql`SELECT issue_date::text AS issue_date, issue_number, status, subject,
+    preview_text, is_short_form, iterations, word_count, body, html, created_at, shipped_at
+    FROM issues WHERE issue_date = ${date}`) as IssueRow[];
   return rows[0] ?? null;
 }
 
 export async function getLatestIssue(): Promise<IssueRow | null> {
   const sql = getSql();
   const rows = (await sql`
-    SELECT * FROM issues
+    SELECT issue_date::text AS issue_date, issue_number, status, subject, preview_text,
+           is_short_form, iterations, word_count, body, html, created_at, shipped_at
+    FROM issues
     WHERE status IN ('shipped', 'short_form_shipped')
     ORDER BY issue_date DESC
     LIMIT 1
@@ -116,7 +122,9 @@ export async function getLatestIssue(): Promise<IssueRow | null> {
 export async function listIssues(limit = 30): Promise<IssueRow[]> {
   const sql = getSql();
   return (await sql`
-    SELECT * FROM issues
+    SELECT issue_date::text AS issue_date, issue_number, status, subject, preview_text,
+           is_short_form, iterations, word_count, body, html, created_at, shipped_at
+    FROM issues
     WHERE status IN ('shipped', 'short_form_shipped')
     ORDER BY issue_date DESC
     LIMIT ${limit}
@@ -242,7 +250,10 @@ export async function saveHold(
 
 export async function listHolds(): Promise<HoldRow[]> {
   const sql = getSql();
-  return (await sql`SELECT * FROM holds ORDER BY issue_date DESC`) as HoldRow[];
+  return (await sql`
+    SELECT issue_date::text AS issue_date, failing_critics, unresolved_violations, drafts, created_at
+    FROM holds ORDER BY issue_date DESC
+  `) as HoldRow[];
 }
 
 /**
