@@ -7,10 +7,19 @@ name: Daily issue
 # calls and needs longer. GitHub Actions has no such cap. Vercel just hosts the
 # read-only archive; this workflow does the generation and writes to Neon.
 #
-# DST-safe timing: Vercel/GitHub cron is UTC-only. We fire two weekday schedules
-# (10:00 and 11:00 UTC) and only proceed when it is actually 06:00 in New York,
-# so exactly one run generates the issue per weekday across EST/EDT. The
-# pipeline is idempotent per date, so the sibling trigger safely no-ops.
+# DST-safe timing: GitHub cron is UTC-only, so we fire two weekday schedules
+# (10:00 and 11:00 UTC) bracketing 06:00 America/New_York across EST/EDT.
+#
+# There is deliberately NO wall-clock gate ("only run if it's exactly 06:00
+# ET") on top of that. GitHub scheduled triggers are not guaranteed to fire on
+# time — under load they can be delayed by hours, confirmed in this repo's own
+# run history (both schedules landed ~2-3h late one morning, at ~08:00 ET
+# instead of 06:00). An exact-hour-string gate does not tolerate that: it just
+# silently skips generation for the whole day. Instead we rely entirely on the
+# pipeline's own per-date idempotency (skips if today's issue already exists,
+# unless --force) — whichever of the two schedules fires first each day
+# generates the issue, at whatever hour it actually runs; the other becomes a
+# cheap no-op. See ASSUMPTIONS.md's 2026-08-06 entry.
 
 on:
   schedule:
@@ -61,10 +70,5 @@ jobs:
           if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
             npm run pipeline ${{ inputs.force && '-- --force' || '' }}
           else
-            ET_HOUR="$(TZ=America/New_York date +%H)"
-            if [ "$ET_HOUR" = "06" ]; then
-              npm run pipeline
-            else
-              echo "Not 06:00 ET (now ${ET_HOUR}:00 ET) — skipping this trigger."
-            fi
+            npm run pipeline
           fi
