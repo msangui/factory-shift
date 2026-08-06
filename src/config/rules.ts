@@ -35,6 +35,21 @@ export const GAUNTLET = {
    * daily cadence instead of holding forever. Override with VOICE_PASS_SCORE.
    */
   voicePassScore: Number(process.env.VOICE_PASS_SCORE || "7"),
+  /**
+   * DEVIATION FROM SPEC, opt-in only. The spec is explicit: "If any critic
+   * still fails after iteration 3: HOLD the issue. Do not ship a degraded
+   * version silently." Default here is `false`, which preserves that behavior.
+   *
+   * Setting AUTO_PUBLISH_ON_HOLD=1 removes the human-in-the-loop gate: an
+   * issue that still fails one or more critics after 3 iterations SHIPS
+   * anyway, with whatever violations remain unresolved (fabricated-looking
+   * stats, stale stories, broken structure — anything a critic would have
+   * caught). It is not silent in the audit-log sense — every critic verdict
+   * per iteration is still written to `gauntlet_log`, and a
+   * `pipeline.auto_published_despite_failures` log line records exactly what
+   * shipped anyway — but nothing blocks publication. See ASSUMPTIONS.md.
+   */
+  autoPublishOnHold: process.env.AUTO_PUBLISH_ON_HOLD === "1",
 } as const;
 
 export const INGEST = {

@@ -21,6 +21,8 @@ export interface LoopResult {
   /** Critics still failing at the end (empty on ship). */
   failingCritics: CriticName[];
   unresolvedViolations: { critic: CriticName; items: Verdict["violations"] }[];
+  /** True when this shipped only because AUTO_PUBLISH_ON_HOLD bypassed a failing Gauntlet. */
+  autoPublished: boolean;
 }
 
 /**
@@ -89,13 +91,15 @@ export async function runGauntletLoop(input: {
         lastVerdicts: run.verdicts,
         failingCritics: [],
         unresolvedViolations: [],
+        autoPublished: false,
       };
     }
 
-    // Out of iterations → HOLD.
+    // Out of iterations. Spec default: HOLD. Opt-in (AUTO_PUBLISH_ON_HOLD=1):
+    // ship anyway with the remaining violations left unresolved.
     if (iteration === GAUNTLET.maxIterations) {
       return {
-        status: "hold",
+        status: GAUNTLET.autoPublishOnHold ? "ship" : "hold",
         finalDraft: current,
         finalHtml: html,
         iterations: iteration,
@@ -103,6 +107,7 @@ export async function runGauntletLoop(input: {
         lastVerdicts: run.verdicts,
         failingCritics: run.failing.map((f) => f.critic),
         unresolvedViolations: run.failing,
+        autoPublished: GAUNTLET.autoPublishOnHold,
       };
     }
 

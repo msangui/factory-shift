@@ -7,7 +7,8 @@ friend explaining business news over coffee.
 
 Every issue is generated through **the Gauntlet**: a draft must pass six independent
 critics before it ships. If it can't be fixed in three iterations, it's **held**, never
-shipped degraded.
+shipped degraded — unless `AUTO_PUBLISH_ON_HOLD=1` is explicitly set, an opt-in,
+default-off deviation that removes this gate (see [`ASSUMPTIONS.md`](./ASSUMPTIONS.md)).
 
 > **Naming.** Three candidates were floated before launch — *Aisle & Ledger* (the spec's
 > working name), *Checkout*, and *Shelf Life*. The operator chose **The Morning Shelf**.
@@ -105,6 +106,7 @@ Copy `.env.example` → `.env.local` and fill in:
 | `CRON_SECRET` | Guards `/api/cron` and `/admin/holds`. |
 | `NEXT_PUBLIC_SITE_URL` | Absolute site URL for the issue's web/archive links. |
 | `PRICE_INPUT_PER_MTOK` / `PRICE_OUTPUT_PER_MTOK` | Your Gateway rates, for the cost estimate. |
+| `AUTO_PUBLISH_ON_HOLD` | Opt-in, default off. Set to `1` to ship an issue even if the Gauntlet still fails after 3 iterations, instead of holding it for manual review. Deviates from the spec — see [`ASSUMPTIONS.md`](./ASSUMPTIONS.md). |
 
 **Nothing secret goes in the repo or in the rendered HTML.** Set the same vars in Vercel
 Project Settings for production.

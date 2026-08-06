@@ -49,6 +49,8 @@ jobs:
       MODEL_DRAFTER: ${{ secrets.MODEL_DRAFTER || 'claude-sonnet-4-5' }}
       MODEL_CRITIC: ${{ secrets.MODEL_CRITIC || 'claude-sonnet-4-5' }}
       NEXT_PUBLIC_SITE_URL: ${{ secrets.NEXT_PUBLIC_SITE_URL }}
+      # Opt-in only, default off. See ASSUMPTIONS.md's 2026-08-06 auto-publish entry.
+      AUTO_PUBLISH_ON_HOLD: ${{ secrets.AUTO_PUBLISH_ON_HOLD }}
       PRICE_INPUT_PER_MTOK: ${{ secrets.PRICE_INPUT_PER_MTOK }}
       PRICE_OUTPUT_PER_MTOK: ${{ secrets.PRICE_OUTPUT_PER_MTOK }}
     steps:

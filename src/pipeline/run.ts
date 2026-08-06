@@ -119,6 +119,12 @@ export async function runPipeline(opts: { force?: boolean; now?: Date } = {}): P
         result.finalDraft,
       );
       log.warn("pipeline.hold", { issueDate, failing: result.failingCritics, iterations: result.iterations });
+    } else if (result.autoPublished) {
+      log.warn("pipeline.auto_published_despite_failures", {
+        issueDate,
+        failing: result.failingCritics,
+        iterations: result.iterations,
+      });
     }
   }
 
