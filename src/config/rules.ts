@@ -34,7 +34,7 @@ export const GAUNTLET = {
    * lowered to 7 by default so genuinely good-but-not-perfect copy ships on the
    * daily cadence instead of holding forever. Override with VOICE_PASS_SCORE.
    */
-  voicePassScore: Number(process.env.VOICE_PASS_SCORE ?? "7"),
+  voicePassScore: Number(process.env.VOICE_PASS_SCORE || "7"),
 } as const;
 
 export const INGEST = {

@@ -42,6 +42,10 @@ export interface HoldRow {
   failing_critics: CriticName[];
   unresolved_violations: unknown;
   drafts: IssueDraft[];
+  /** Rendered HTML of the held (final) draft; empty on pre-0002 rows. */
+  html: string;
+  /** The final held draft; null on pre-0002 rows. */
+  final_draft: IssueDraft | null;
   created_at: string;
 }
 
@@ -234,41 +238,89 @@ export async function saveHold(
   failingCritics: CriticName[],
   unresolvedViolations: unknown,
   drafts: IssueDraft[],
+  html: string,
+  finalDraft: IssueDraft,
 ): Promise<void> {
   const sql = getSql();
   await sql`
-    INSERT INTO holds (issue_date, failing_critics, unresolved_violations, drafts)
+    INSERT INTO holds (issue_date, failing_critics, unresolved_violations, drafts, html, final_draft)
     VALUES (${issueDate}, ${JSON.stringify(failingCritics)}::jsonb,
-            ${JSON.stringify(unresolvedViolations)}::jsonb, ${JSON.stringify(drafts)}::jsonb)
+            ${JSON.stringify(unresolvedViolations)}::jsonb, ${JSON.stringify(drafts)}::jsonb,
+            ${html}, ${JSON.stringify(finalDraft)}::jsonb)
     ON CONFLICT (issue_date) DO UPDATE
       SET failing_critics = EXCLUDED.failing_critics,
           unresolved_violations = EXCLUDED.unresolved_violations,
           drafts = EXCLUDED.drafts,
+          html = EXCLUDED.html,
+          final_draft = EXCLUDED.final_draft,
           created_at = NOW()
   `;
+}
+
+export async function getHold(date: string): Promise<HoldRow | null> {
+  const sql = getSql();
+  const rows = (await sql`
+    SELECT issue_date::text AS issue_date, failing_critics, unresolved_violations, drafts,
+           html, final_draft, created_at
+    FROM holds WHERE issue_date = ${date}
+  `) as HoldRow[];
+  return rows[0] ?? null;
 }
 
 export async function listHolds(): Promise<HoldRow[]> {
   const sql = getSql();
   return (await sql`
-    SELECT issue_date::text AS issue_date, failing_critics, unresolved_violations, drafts, created_at
+    SELECT issue_date::text AS issue_date, failing_critics, unresolved_violations, drafts,
+           html, final_draft, created_at
     FROM holds ORDER BY issue_date DESC
   `) as HoldRow[];
 }
 
 /**
  * Manually ship a held issue after human review (spec: "may ship manually").
- * Flips status held → shipped (or short_form_shipped) so it enters the archive.
- * Returns the new status, or null if there was no held issue for that date.
+ * Two cases:
+ *  1. The issues row itself is 'held' → flip it to shipped.
+ *  2. The issues row stayed shipped (a force re-run held, so the new draft was
+ *     stashed on the holds row instead of demoting the live issue) → apply the
+ *     held draft + HTML to the issues row.
+ * The hold record is cleared on success. Returns the new status, or null if
+ * there was nothing to ship for that date.
  */
 export async function shipHeldIssue(date: string): Promise<IssueStatus | null> {
   const sql = getSql();
-  const rows = (await sql`
+
+  // Case 1: the issue row is held.
+  const flipped = (await sql`
     UPDATE issues
     SET status = CASE WHEN is_short_form THEN 'short_form_shipped' ELSE 'shipped' END,
         shipped_at = NOW()
     WHERE issue_date = ${date} AND status = 'held'
     RETURNING status
   `) as { status: IssueStatus }[];
-  return rows[0]?.status ?? null;
+  if (flipped[0]) {
+    await sql`DELETE FROM holds WHERE issue_date = ${date}`;
+    return flipped[0].status;
+  }
+
+  // Case 2: a stashed held draft behind a still-live issue.
+  const hold = await getHold(date);
+  if (!hold || !hold.html || !hold.final_draft) return null;
+  const d = hold.final_draft;
+  const subject = d.subjectCandidates[d.chosenSubjectIndex] ?? d.subjectCandidates[0] ?? "The Morning Shelf";
+  const status: IssueStatus = d.isShortForm ? "short_form_shipped" : "shipped";
+  const updated = (await sql`
+    UPDATE issues
+    SET body = ${JSON.stringify(d)}::jsonb,
+        html = ${hold.html},
+        subject = ${subject},
+        preview_text = ${d.previewText},
+        is_short_form = ${d.isShortForm},
+        status = ${status},
+        shipped_at = NOW()
+    WHERE issue_date = ${date}
+    RETURNING status
+  `) as { status: IssueStatus }[];
+  if (!updated[0]) return null;
+  await sql`DELETE FROM holds WHERE issue_date = ${date}`;
+  return updated[0].status;
 }

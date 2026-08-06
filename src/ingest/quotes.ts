@@ -7,7 +7,7 @@ const FETCH_TIMEOUT_MS = 10_000;
 // Yahoo Finance's chart endpoint responds from datacenter/CI IPs (Stooq blocks
 // them), needs no key, and returns daily closes we can diff for the % change.
 function base(): string {
-  return process.env.QUOTES_BASE_URL ?? "https://query1.finance.yahoo.com";
+  return process.env.QUOTES_BASE_URL || "https://query1.finance.yahoo.com";
 }
 
 function num(v: unknown): number | null {

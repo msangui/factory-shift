@@ -29,7 +29,7 @@ export interface PipelineSummary {
 export async function runPipeline(opts: { force?: boolean; now?: Date } = {}): Promise<PipelineSummary> {
   const now = opts.now ?? new Date();
   const issueDate = isoDateInTz(now, NEWSLETTER_TZ);
-  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000";
+  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "http://localhost:3000";
 
   const existing = await getIssue(issueDate);
   if (existing && !opts.force) {
@@ -77,23 +77,49 @@ export async function runPipeline(opts: { force?: boolean; now?: Date } = {}): P
         ? "short_form_shipped"
         : "shipped";
 
-  // Persist the issue (a held issue is stored so it can be reviewed and shipped manually).
-  await saveIssue({
-    issueDate,
-    issueNumber,
-    status,
-    subject,
-    previewText: result.finalDraft.previewText,
-    isShortForm: result.finalDraft.isShortForm,
-    iterations: result.iterations,
-    wordCount,
-    body: result.finalDraft,
-    html: result.finalHtml,
-  });
-
-  if (result.status === "hold") {
-    await saveHold(issueDate, result.failingCritics, result.unresolvedViolations, result.drafts);
-    log.warn("pipeline.hold", { issueDate, failing: result.failingCritics, iterations: result.iterations });
+  // Persist. A hold must never demote an already-shipped issue: if a force
+  // re-run holds while a shipped version is live, keep the live version and
+  // stash the new draft on the holds row for review/manual ship.
+  const wasLive = existing?.status === "shipped" || existing?.status === "short_form_shipped";
+  if (result.status === "hold" && wasLive) {
+    await saveHold(
+      issueDate,
+      result.failingCritics,
+      result.unresolvedViolations,
+      result.drafts,
+      result.finalHtml,
+      result.finalDraft,
+    );
+    log.warn("pipeline.hold_kept_live", {
+      issueDate,
+      failing: result.failingCritics,
+      iterations: result.iterations,
+      note: "previously shipped issue kept live; held draft stashed for review",
+    });
+  } else {
+    await saveIssue({
+      issueDate,
+      issueNumber,
+      status,
+      subject,
+      previewText: result.finalDraft.previewText,
+      isShortForm: result.finalDraft.isShortForm,
+      iterations: result.iterations,
+      wordCount,
+      body: result.finalDraft,
+      html: result.finalHtml,
+    });
+    if (result.status === "hold") {
+      await saveHold(
+        issueDate,
+        result.failingCritics,
+        result.unresolvedViolations,
+        result.drafts,
+        result.finalHtml,
+        result.finalDraft,
+      );
+      log.warn("pipeline.hold", { issueDate, failing: result.failingCritics, iterations: result.iterations });
+    }
   }
 
   const snap = ledger.snapshot();

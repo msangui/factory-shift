@@ -56,7 +56,12 @@ export default async function HoldsPage({ searchParams }: { searchParams: Promis
               </pre>
             </details>
             <p style={{ marginTop: 10 }}>
-              <a href={`/api/issues/${h.issue_date}/html`} style={{ color: "#b3541e" }}>View the held draft&apos;s HTML →</a>
+              <a
+                href={h.html ? `/api/holds/${h.issue_date}/html${key ? `?key=${encodeURIComponent(key)}` : ""}` : `/api/issues/${h.issue_date}/html`}
+                style={{ color: "#b3541e" }}
+              >
+                Preview the held draft →
+              </a>
             </p>
             <form
               method="post"
