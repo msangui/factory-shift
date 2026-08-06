@@ -1,7 +1,7 @@
 import { FRESHNESS, INGEST } from "@/config/rules";
-import { upsertSources } from "@/lib/db";
+import { recentIssueSourceUrls, recentIssueTitles, upsertSources } from "@/lib/db";
 import { log } from "@/lib/logger";
-import { hoursBetween, normalizeTitle } from "@/lib/util";
+import { hoursBetween, normalizeTitle, normalizeUrl } from "@/lib/util";
 import { fetchMarketSnapshot } from "@/ingest/quotes";
 import { fetchAllFeeds } from "@/ingest/rss";
 import type { CachedSource, IngestResult, StoryCandidate } from "@/ingest/types";
@@ -12,8 +12,13 @@ import type { CachedSource, IngestResult, StoryCandidate } from "@/ingest/types"
  *     critic can later verify any cited URL was actually ingested).
  *  2. Build the candidate pool: items <= 72h old (the Big Story may use up to
  *     72h if developing; everything else is held to <=36h by the Freshness critic).
- *  3. Fetch the market snapshot.
- *  4. Decide short-form when fewer than the minimum usable fresh stories exist.
+ *  3. Drop any candidate already cited (by URL) or already covered (by exact
+ *     title) in a recent issue, so the drafter can never re-select a story
+ *     it's already run — the root fix for cross-issue repeats. A genuinely
+ *     new development gets a genuinely new URL, so this never blocks a real
+ *     update, only exact re-citation of already-published content.
+ *  4. Fetch the market snapshot.
+ *  5. Decide short-form when fewer than the minimum usable fresh stories exist.
  *
  * `persist` is false in unit tests so no DB is required.
  */
@@ -27,7 +32,22 @@ export async function ingest(opts: { persist?: boolean } = {}): Promise<IngestRe
     await upsertSources(sources);
   }
 
-  const candidates = buildCandidates(sources, now);
+  let candidates = buildCandidates(sources, now);
+
+  if (persist) {
+    const [usedUrls, usedTitles] = await Promise.all([
+      recentIssueSourceUrls(FRESHNESS.dedupeLookbackIssues),
+      recentIssueTitles(FRESHNESS.dedupeLookbackIssues),
+    ]);
+    const usedTitleSet = new Set(usedTitles);
+    const before = candidates.length;
+    candidates = candidates.filter(
+      (c) => !usedUrls.has(normalizeUrl(c.url)) && !usedTitleSet.has(normalizeTitle(c.title)),
+    );
+    const dropped = before - candidates.length;
+    if (dropped > 0) log.info("ingest.dedupe_dropped", { dropped, remaining: candidates.length });
+  }
+
   const usableFresh = candidates.filter((c) => c.ageHours <= FRESHNESS.maxAgeHours);
   const shortForm = usableFresh.length < INGEST.minStoriesForFullIssue;
 

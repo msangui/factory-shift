@@ -194,6 +194,34 @@ export async function recentIssueTitles(lookback: number): Promise<string[]> {
   return titles.map(normalizeTitle);
 }
 
+/**
+ * Every source URL cited anywhere (Big Story, Retail Tech, CPG Corner, Deal
+ * Flow bullets, Quick Hits, Stat of the Day) in the last N issues, normalized.
+ * A URL already cited is an unambiguous repeat regardless of how its headline
+ * gets reworded — this is the primary cross-issue duplicate signal, and it
+ * covers every section (unlike title matching, which only applies to the
+ * three sections that have a "title" field).
+ */
+export async function recentIssueSourceUrls(lookback: number): Promise<Set<string>> {
+  const sql = getSql();
+  const rows = (await sql`
+    SELECT body FROM issues
+    ORDER BY issue_date DESC
+    LIMIT ${lookback}
+  `) as { body: IssueDraft }[];
+  const urls = new Set<string>();
+  for (const r of rows) {
+    const b = r.body;
+    if (b.bigStory) b.bigStory.sourceUrls.forEach((u) => urls.add(normalizeUrl(u)));
+    if (b.retailTech) b.retailTech.sourceUrls.forEach((u) => urls.add(normalizeUrl(u)));
+    if (b.cpgCorner) b.cpgCorner.sourceUrls.forEach((u) => urls.add(normalizeUrl(u)));
+    if (b.dealFlow) b.dealFlow.forEach((d) => urls.add(normalizeUrl(d.sourceUrl)));
+    b.quickHits.forEach((q) => urls.add(normalizeUrl(q.sourceUrl)));
+    if (b.statOfDay) urls.add(normalizeUrl(b.statOfDay.sourceUrl));
+  }
+  return urls;
+}
+
 // ── Gauntlet audit log ───────────────────────────────────────────────────────
 
 /** One row per critic verdict per iteration (the audit log). */

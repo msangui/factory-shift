@@ -1,14 +1,22 @@
 import { FRESHNESS } from "@/config/rules";
-import { findCachedByUrls, recentIssueTitles } from "@/lib/db";
+import { findCachedByUrls, recentIssueSourceUrls, recentIssueTitles } from "@/lib/db";
 import { hoursBetween, normalizeTitle, normalizeUrl } from "@/lib/util";
 import { type Critic, type GauntletContext, type Verdict, type Violation } from "@/gauntlet/types";
 
 /**
  * Freshness critic (deterministic + archive lookup, pass = zero violations).
  * Every story timestamp is within the window (<=36h; the Big Story may reach
- * 72h only if developing=true). Duplicate detection: a section whose headline
- * exactly matches one from the last 5 issues is flagged as stale repetition —
- * the drafter must drop it or reframe it as an explicit update.
+ * 72h only if developing=true). Duplicate detection is two-layered — this is
+ * mostly a safety net, since ingest already excludes previously-used URLs and
+ * titles from the candidate pool before the drafter ever sees them:
+ *  - a cited source URL already used in the last 5 issues, in ANY section
+ *    (Big Story, Retail Tech, CPG Corner, Deal Flow, Quick Hits, Stat of the
+ *    Day) is flagged, since a repeated URL is an unambiguous repeat regardless
+ *    of rewording;
+ *  - a headline (Big Story/Retail Tech/CPG Corner, the only sections with a
+ *    "title") that exactly matches one from the last 5 issues is flagged too,
+ *    catching the case where a different outlet re-covers the same event
+ *    under a new URL.
  *
  * Ages come from the ingest candidate pool (no DB needed for the timestamp
  * check); when `ctx.live`, uncached-but-cited URLs are resolved against the DB,
@@ -52,10 +60,20 @@ export const freshnessCritic: Critic = {
 
     // Duplicate detection vs the last N issues.
     if (ctx.live) {
-      const recent = new Set(await recentIssueTitles(FRESHNESS.dedupeLookbackIssues));
+      const [recentTitleSet, recentUrlSet] = await Promise.all([
+        recentIssueTitles(FRESHNESS.dedupeLookbackIssues).then((t) => new Set(t)),
+        recentIssueSourceUrls(FRESHNESS.dedupeLookbackIssues),
+      ]);
       for (const [key, title] of currentTitles(ctx.draft)) {
-        if (recent.has(normalizeTitle(title))) {
+        if (recentTitleSet.has(normalizeTitle(title))) {
           v.push({ location: key, issue: `"${title}" ran in a recent issue.`, fix_suggestion: "Drop it, or only reuse it with a genuinely new development framed explicitly as an update." });
+        }
+      }
+      for (const s of sections) {
+        for (const url of s.urls) {
+          if (recentUrlSet.has(normalizeUrl(url))) {
+            v.push({ location: s.key, issue: `Source ${url} was already cited in a recent issue — this is a repeat story.`, fix_suggestion: "Use a different, not-yet-covered source, or drop this item." });
+          }
         }
       }
     }
