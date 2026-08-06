@@ -32,10 +32,12 @@ function fmtChange(pct: number | null): { text: string; color: string } {
 }
 
 function renderTicker(draft: IssueDraft, market: MarketSnapshot): string {
-  const cells = market.quotes
+  // Wrapping chips (inline-block), not a single-row table, so the bar reflows on
+  // narrow screens instead of forcing horizontal scroll.
+  const chips = market.quotes
     .map((q: Quote) => {
       const c = fmtChange(q.changePct);
-      return `<td style="padding:4px 10px 4px 0;white-space:nowrap;font-size:13px;color:${THEME.ink};"><strong>${esc(q.symbol)}</strong> <span style="color:${c.color};">${c.text}</span></td>`;
+      return `<span style="display:inline-block;white-space:nowrap;margin:0 14px 6px 0;font-size:13px;color:${THEME.ink};"><strong>${esc(q.symbol)}</strong> <span style="color:${c.color};">${c.text}</span></span>`;
     })
     .join("");
 
@@ -55,7 +57,7 @@ function renderTicker(draft: IssueDraft, market: MarketSnapshot): string {
 
   return (
     sectionHeading("📊", "The Ticker") +
-    `<table role="presentation" cellpadding="0" cellspacing="0" style="width:100%;border-collapse:collapse;"><tr>${cells}</tr></table>` +
+    `<div style="line-height:1.7;">${chips}</div>` +
     (moverLines ? `<div style="margin-top:8px;">${moverLines}</div>` : "")
   );
 }
@@ -203,7 +205,7 @@ export function renderIssueHtml(input: {
 <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background-color:${THEME.pageBg};">
   <tr>
     <td align="center" style="padding:16px;">
-      <table role="presentation" width="600" cellpadding="0" cellspacing="0" style="width:600px;max-width:600px;background-color:${THEME.cardBg};border:1px solid ${THEME.rule};border-radius:8px;font-family:${THEME.fontStack};">
+      <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="width:100%;max-width:600px;background-color:${THEME.cardBg};border:1px solid ${THEME.rule};border-radius:8px;font-family:${THEME.fontStack};">
 ${body}
       </table>
     </td>
