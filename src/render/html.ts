@@ -37,7 +37,7 @@ function renderTicker(draft: IssueDraft, market: MarketSnapshot): string {
   const chips = market.quotes
     .map((q: Quote) => {
       const c = fmtChange(q.changePct);
-      return `<span style="display:inline-block;white-space:nowrap;margin:0 14px 6px 0;font-size:13px;color:${THEME.ink};"><strong>${esc(q.symbol)}</strong> <span style="color:${c.color};">${c.text}</span></span>`;
+      return `<span style="display:inline-block;white-space:nowrap;margin:0 14px 6px 0;font-size:14px;color:${THEME.ink};"><strong>${esc(q.symbol)}</strong> <span style="color:${c.color};">${c.text}</span></span>`;
     })
     .join("");
 
@@ -50,7 +50,7 @@ function renderTicker(draft: IssueDraft, market: MarketSnapshot): string {
       const c = fmtChange(q.changePct);
       const arrow = (q.changePct ?? 0) >= 0 ? "▲" : "▼";
       const whyText = why ? ` — ${esc(why)}` : "";
-      return `<div style="font-size:14px;color:${THEME.ink};margin-top:4px;"><span style="color:${c.color};">${arrow} ${esc(q.name)} ${c.text}</span>${whyText}</div>`;
+      return `<div style="font-size:15px;color:${THEME.ink};margin-top:4px;"><span style="color:${c.color};">${arrow} ${esc(q.name)} ${c.text}</span>${whyText}</div>`;
     })
     .filter(Boolean)
     .join("");
@@ -63,7 +63,7 @@ function renderTicker(draft: IssueDraft, market: MarketSnapshot): string {
 }
 
 function paragraph(text: string): string {
-  return `<div style="font-size:15px;line-height:1.55;color:${THEME.ink};">${esc(text)}</div>`;
+  return `<div style="font-size:16px;line-height:1.6;color:${THEME.ink};">${esc(text)}</div>`;
 }
 
 /** Render one issue to a single self-contained, email-safe HTML document. */
@@ -104,7 +104,7 @@ export function renderIssueHtml(input: {
         sectionHeading("🛒", "The Big Story") +
           `<div style="font-size:17px;font-weight:700;color:${THEME.ink};margin-bottom:6px;">${esc(bs.title)}</div>` +
           paragraph(bs.body) +
-          `<div style="font-size:14px;line-height:1.5;color:${THEME.ink};margin-top:10px;"><strong>Why it matters:</strong> ${esc(bs.whyItMatters)}${readMore}</div>`,
+          `<div style="font-size:15px;line-height:1.6;color:${THEME.ink};margin-top:10px;"><strong>Why it matters:</strong> ${esc(bs.whyItMatters)}${readMore}</div>`,
       ),
     );
   }
@@ -116,7 +116,7 @@ export function renderIssueHtml(input: {
     rows.push(
       row(
         sectionHeading("🤖", "Retail Tech") +
-          `<div style="font-size:15px;font-weight:700;color:${THEME.ink};margin-bottom:6px;">${esc(s.title)}</div>` +
+          `<div style="font-size:16px;font-weight:700;color:${THEME.ink};margin-bottom:6px;">${esc(s.title)}</div>` +
           paragraph(s.body) +
           `<div style="margin-top:6px;font-size:14px;">${readMore}</div>`,
       ),
@@ -130,7 +130,7 @@ export function renderIssueHtml(input: {
     rows.push(
       row(
         sectionHeading("🧴", "CPG Corner") +
-          `<div style="font-size:15px;font-weight:700;color:${THEME.ink};margin-bottom:6px;">${esc(s.title)}</div>` +
+          `<div style="font-size:16px;font-weight:700;color:${THEME.ink};margin-bottom:6px;">${esc(s.title)}</div>` +
           paragraph(s.body) +
           `<div style="margin-top:6px;font-size:14px;">${readMore}</div>`,
       ),
@@ -145,7 +145,7 @@ export function renderIssueHtml(input: {
     rows.push(
       row(
         sectionHeading("💸", "Deal Flow & Earnings") +
-          `<ul style="margin:0;padding-left:20px;font-size:15px;line-height:1.5;color:${THEME.ink};">${items}</ul>`,
+          `<ul style="margin:0;padding-left:20px;font-size:16px;line-height:1.6;color:${THEME.ink};">${items}</ul>`,
       ),
     );
   }
@@ -158,7 +158,7 @@ export function renderIssueHtml(input: {
     rows.push(
       row(
         sectionHeading("⚡", "Quick Hits") +
-          `<ul style="margin:0;padding-left:20px;font-size:15px;line-height:1.5;color:${THEME.ink};">${items}</ul>`,
+          `<ul style="margin:0;padding-left:20px;font-size:16px;line-height:1.6;color:${THEME.ink};">${items}</ul>`,
       ),
     );
   }
@@ -170,7 +170,7 @@ export function renderIssueHtml(input: {
       row(
         sectionHeading("📈", "Stat of the Day") +
           `<div style="font-size:26px;font-weight:800;color:${THEME.accent};">${esc(st.stat)}</div>` +
-          `<div style="font-size:15px;line-height:1.5;color:${THEME.ink};margin-top:4px;">${esc(st.context)} ${link(st.sourceUrl, "↗")}</div>`,
+          `<div style="font-size:16px;line-height:1.6;color:${THEME.ink};margin-top:4px;">${esc(st.context)} ${link(st.sourceUrl, "↗")}</div>`,
       ),
     );
   }
@@ -178,7 +178,7 @@ export function renderIssueHtml(input: {
   // Sign-off + footer.
   rows.push(
     `<tr><td style="padding:20px 24px 8px 24px;">
-      <div style="font-size:15px;color:${THEME.ink};">${esc(draft.signOff)}</div>
+      <div style="font-size:16px;color:${THEME.ink};">${esc(draft.signOff)}</div>
     </td></tr>`,
   );
   rows.push(
