@@ -66,7 +66,16 @@ async function fetchFeed(feed: FeedSource): Promise<CachedSource[]> {
       return [];
     }
     const xml = await res.text();
-    return parseFeedXml(xml, feed);
+    const items = parseFeedXml(xml, feed);
+    // Per-feed yield, so a newly added feed (esp. an unverified guessed URL —
+    // see feeds.ts) can be confirmed or pruned from real run logs instead of
+    // just the aggregate count.
+    if (items.length === 0) {
+      log.warn("rss.feed.empty", { feed: feed.name, url: feed.url });
+    } else {
+      log.info("rss.feed.ok", { feed: feed.name, items: items.length });
+    }
+    return items;
   } catch (err) {
     log.warn("rss.fetch.error", { feed: feed.name, error: String(err) });
     return [];
