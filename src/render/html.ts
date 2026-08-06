@@ -205,7 +205,7 @@ export function renderIssueHtml(input: {
 <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background-color:${THEME.pageBg};">
   <tr>
     <td align="center" style="padding:16px;">
-      <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="width:100%;max-width:600px;background-color:${THEME.cardBg};border:1px solid ${THEME.rule};border-radius:8px;font-family:${THEME.fontStack};">
+      <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="width:100%;max-width:600px;background-color:${THEME.cardBg};border:1px solid ${THEME.rule};border-radius:8px;font-family:${THEME.fontStack};word-wrap:break-word;overflow-wrap:break-word;table-layout:fixed;">
 ${body}
       </table>
     </td>
