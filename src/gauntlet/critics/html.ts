@@ -38,7 +38,11 @@ export const htmlCritic: Critic = {
     for (const m of html.matchAll(IMG_RE)) {
       const tag = m[0];
       const src = tag.match(/src\s*=\s*"([^"]+)"/i)?.[1] ?? "";
-      if (!/^https:\/\//i.test(src)) v.push({ location: "img", issue: `Image src is not absolute HTTPS: '${src}'.`, fix_suggestion: "Use an absolute https:// image URL." });
+      // data: images are self-contained (no external fetch at all), so they're
+      // strictly more robust than an https:// URL, not less — allowed alongside it.
+      if (!/^https:\/\//i.test(src) && !/^data:image\//i.test(src)) {
+        v.push({ location: "img", issue: `Image src is not absolute HTTPS or a data: URI: '${src}'.`, fix_suggestion: "Use an absolute https:// image URL or a self-contained data:image/ URI." });
+      }
       if (!/alt\s*=\s*"/i.test(tag)) v.push({ location: "img", issue: "Image missing alt text.", fix_suggestion: "Add an alt attribute." });
     }
     // No http:// resource references inside inline styles (e.g. background url()).

@@ -17,12 +17,29 @@ function link(url: string, label: string): string {
   return `<a href="${esc(url)}" style="color:${THEME.accent};text-decoration:underline;">${esc(label)}</a>`;
 }
 
-function sectionHeading(emoji: string, title: string): string {
-  return `<div style="font-size:13px;font-weight:700;letter-spacing:0.04em;text-transform:uppercase;color:${THEME.accent};margin:0 0 6px 0;">${emoji} ${esc(title)}</div>`;
+/** A filled, uppercase section label ("badge"), per the Issue Email v2 design. */
+function sectionBadge(emoji: string, title: string): string {
+  return `<div style="display:inline-block;font-size:12px;font-weight:700;letter-spacing:0.06em;text-transform:uppercase;color:${THEME.ink};background-color:${THEME.badgeBg};padding:3px 10px;border-radius:4px;margin-bottom:10px;">${emoji} ${esc(title)}</div>`;
 }
 
 function row(inner: string): string {
-  return `<tr><td style="padding:18px 24px;border-bottom:1px solid ${THEME.rule};">${inner}</td></tr>`;
+  return `<tr><td style="padding:20px 24px;border-bottom:1px solid ${THEME.rule};">${inner}</td></tr>`;
+}
+
+/**
+ * A decorative, self-contained SVG banner for a story section. There is no
+ * real-photo source in the pipeline (ingest only carries RSS text + links, no
+ * image enclosures), so rather than fabricate a "photo" or ship a literal
+ * "photo placeholder" box in production, each section gets an abstract,
+ * on-brand graphic: its own emoji, large, centered, on the theme's image
+ * fill. Encoded as a data: URI — self-contained, no external fetch, which
+ * the HTML critic treats as at least as trustworthy as an https:// image.
+ */
+function sectionImage(emoji: string, height: number): string {
+  const width = 552;
+  const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${height}" viewBox="0 0 ${width} ${height}"><rect width="${width}" height="${height}" fill="${THEME.imageBg}"/><text x="${width / 2}" y="${height / 2}" font-family="Helvetica,Arial,sans-serif" font-size="64" text-anchor="middle" dominant-baseline="central">${emoji}</text></svg>`;
+  const b64 = Buffer.from(svg).toString("base64");
+  return `<img src="data:image/svg+xml;base64,${b64}" width="${width}" height="${height}" alt="" style="display:block;width:100%;max-width:${width}px;height:auto;border-radius:6px;border:1px solid ${THEME.cardBorder};margin-bottom:12px;"/>`;
 }
 
 function fmtChange(pct: number | null): { text: string; color: string } {
@@ -31,13 +48,23 @@ function fmtChange(pct: number | null): { text: string; color: string } {
   return { text: `${sign}${pct.toFixed(2)}%`, color: pct >= 0 ? THEME.tickerUp : THEME.tickerDown };
 }
 
+function fmtPrice(price: number | null): string {
+  return price === null ? "—" : `$${price.toFixed(2)}`;
+}
+
 function renderTicker(draft: IssueDraft, market: MarketSnapshot): string {
-  // Wrapping chips (inline-block), not a single-row table, so the bar reflows on
-  // narrow screens instead of forcing horizontal scroll.
-  const chips = market.quotes
-    .map((q: Quote) => {
+  // A plain 3-column table (symbol, price, change) reads cleanly and, being a
+  // fluid-width table of short cells rather than a fixed-width row, never
+  // forces horizontal scroll on narrow screens.
+  const tickerRows = market.quotes
+    .map((q: Quote, i) => {
       const c = fmtChange(q.changePct);
-      return `<span style="display:inline-block;white-space:nowrap;margin:0 14px 6px 0;font-size:14px;color:${THEME.ink};"><strong>${esc(q.symbol)}</strong> <span style="color:${c.color};">${c.text}</span></span>`;
+      const border = i < market.quotes.length - 1 ? `border-bottom:1px solid ${THEME.rule};` : "";
+      return `<tr>
+        <td style="padding:8px 0;${border}font-size:14px;font-weight:700;color:${THEME.ink};">${esc(q.symbol)}</td>
+        <td align="right" style="padding:8px 0;${border}font-size:14px;color:${THEME.ink};">${fmtPrice(q.lastClose)}</td>
+        <td align="right" style="padding:8px 0;${border}font-size:14px;color:${c.color};white-space:nowrap;width:70px;">${c.text}</td>
+      </tr>`;
     })
     .join("");
 
@@ -50,15 +77,15 @@ function renderTicker(draft: IssueDraft, market: MarketSnapshot): string {
       const c = fmtChange(q.changePct);
       const arrow = (q.changePct ?? 0) >= 0 ? "▲" : "▼";
       const whyText = why ? ` — ${esc(why)}` : "";
-      return `<div style="font-size:15px;color:${THEME.ink};margin-top:4px;"><span style="color:${c.color};">${arrow} ${esc(q.name)} ${c.text}</span>${whyText}</div>`;
+      return `<div style="font-size:15px;color:${THEME.ink};margin-top:5px;"><span style="color:${c.color};">${arrow} ${esc(q.name)} ${c.text}</span>${whyText}</div>`;
     })
     .filter(Boolean)
     .join("");
 
   return (
-    sectionHeading("📊", "The Ticker") +
-    `<div style="line-height:1.7;">${chips}</div>` +
-    (moverLines ? `<div style="margin-top:8px;">${moverLines}</div>` : "")
+    sectionBadge("📊", "The Ticker") +
+    `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="border-top:1px solid ${THEME.rule};">${tickerRows}</table>` +
+    (moverLines ? `<div style="margin-top:12px;">${moverLines}</div>` : "")
   );
 }
 
@@ -81,31 +108,55 @@ export function renderIssueHtml(input: {
 
   const rows: string[] = [];
 
-  // Masthead (text only — no external images).
+  // Back-to-archive breadcrumb, for anyone landing directly on an issue permalink.
   rows.push(
-    `<tr><td style="padding:24px 24px 12px 24px;">
-      <div style="font-size:22px;font-weight:800;color:${THEME.ink};">${esc(BRAND.name)}</div>
-      <div style="font-size:12px;color:${THEME.muted};margin-top:2px;">${esc(BRAND.tagline)} · Issue #${issueNumber} · ${esc(issueDate)}${draft.isShortForm ? " · Short-form" : ""}</div>
+    `<tr><td style="padding:14px 24px;border-bottom:1px solid ${THEME.rule};">
+      <a href="${esc(archiveUrl)}" style="font-size:12px;font-weight:600;color:${THEME.accent};text-decoration:underline;">&larr; Back to the archive</a>
+    </td></tr>`,
+  );
+
+  // Masthead (text only — no external images): name + accent mark, issue meta
+  // top-right, tagline below.
+  rows.push(
+    `<tr><td style="padding:24px 24px 4px 24px;">
+      <table role="presentation" width="100%" cellpadding="0" cellspacing="0"><tr>
+        <td style="font-size:21px;font-weight:800;color:${THEME.ink};letter-spacing:-0.01em;">${esc(BRAND.name)}<span style="color:${THEME.accent};">&gt;</span></td>
+        <td align="right" style="font-size:12px;color:${THEME.muted};white-space:nowrap;">Issue #${issueNumber} · ${esc(issueDate)}${draft.isShortForm ? " · Short-form" : ""}</td>
+      </tr></table>
+      <div style="font-size:13px;color:${THEME.muted};margin-top:4px;">${esc(BRAND.tagline)}</div>
     </td></tr>`,
   );
 
   // Opening line.
-  rows.push(row(`<div style="font-size:16px;line-height:1.5;color:${THEME.ink};">☕ ${esc(draft.openingLine)}</div>`));
+  rows.push(
+    `<tr><td style="padding:16px 24px;border-top:1px solid ${THEME.rule};border-bottom:1px solid ${THEME.rule};">
+      <div style="font-size:16px;line-height:1.55;color:${THEME.ink};">☕ ${esc(draft.openingLine)}</div>
+    </td></tr>`,
+  );
 
   // The Ticker.
   rows.push(row(renderTicker(draft, market)));
+
+  // Decorative divider into the story sections.
+  rows.push(
+    `<tr><td style="padding:14px 24px;">
+      <div style="text-align:center;font-size:11px;font-weight:700;letter-spacing:0.14em;text-transform:uppercase;color:${THEME.muted};">— Time to shelve —</div>
+    </td></tr>`,
+  );
 
   // Big Story.
   if (draft.bigStory) {
     const bs = draft.bigStory;
     const readMore = bs.sourceUrls[0] ? ` ${link(bs.sourceUrls[0], "Read more →")}` : "";
     rows.push(
-      row(
-        sectionHeading("🛒", "The Big Story") +
-          `<div style="font-size:17px;font-weight:700;color:${THEME.ink};margin-bottom:6px;">${esc(bs.title)}</div>` +
-          paragraph(bs.body) +
-          `<div style="font-size:15px;line-height:1.6;color:${THEME.ink};margin-top:10px;"><strong>Why it matters:</strong> ${esc(bs.whyItMatters)}${readMore}</div>`,
-      ),
+      `<tr><td style="padding:6px 24px 20px 24px;border-bottom:1px solid ${THEME.rule};">
+        ${sectionBadge("🛒", "The Big Story")}
+        <div style="font-size:17px;font-weight:700;color:${THEME.ink};margin-bottom:10px;">${esc(bs.title)}</div>
+        ${sectionImage("🛒", 240)}
+        ${paragraph(bs.body)}
+        <div style="font-size:15px;line-height:1.6;color:${THEME.ink};margin-top:10px;"><strong>Why it matters:</strong> ${esc(bs.whyItMatters)}${readMore}</div>
+        <div style="font-size:13px;font-style:italic;color:${THEME.muted};margin-top:10px;">—The Shelf Desk</div>
+      </td></tr>`,
     );
   }
 
@@ -115,8 +166,9 @@ export function renderIssueHtml(input: {
     const readMore = s.sourceUrls[0] ? ` ${link(s.sourceUrls[0], "Read more →")}` : "";
     rows.push(
       row(
-        sectionHeading("🤖", "Retail Tech") +
-          `<div style="font-size:16px;font-weight:700;color:${THEME.ink};margin-bottom:6px;">${esc(s.title)}</div>` +
+        sectionBadge("🤖", "Retail Tech") +
+          `<div style="font-size:16px;font-weight:700;color:${THEME.ink};margin-bottom:10px;">${esc(s.title)}</div>` +
+          sectionImage("🤖", 200) +
           paragraph(s.body) +
           `<div style="margin-top:6px;font-size:14px;">${readMore}</div>`,
       ),
@@ -129,8 +181,9 @@ export function renderIssueHtml(input: {
     const readMore = s.sourceUrls[0] ? ` ${link(s.sourceUrls[0], "Read more →")}` : "";
     rows.push(
       row(
-        sectionHeading("🧴", "CPG Corner") +
-          `<div style="font-size:16px;font-weight:700;color:${THEME.ink};margin-bottom:6px;">${esc(s.title)}</div>` +
+        sectionBadge("🧴", "CPG Corner") +
+          `<div style="font-size:16px;font-weight:700;color:${THEME.ink};margin-bottom:10px;">${esc(s.title)}</div>` +
+          sectionImage("🧴", 200) +
           paragraph(s.body) +
           `<div style="margin-top:6px;font-size:14px;">${readMore}</div>`,
       ),
@@ -144,8 +197,8 @@ export function renderIssueHtml(input: {
       .join("");
     rows.push(
       row(
-        sectionHeading("💸", "Deal Flow & Earnings") +
-          `<ul style="margin:0;padding-left:20px;font-size:16px;line-height:1.6;color:${THEME.ink};">${items}</ul>`,
+        sectionBadge("💸", "Deal Flow & Earnings") +
+          `<ul style="margin:0;padding-left:20px;font-size:16px;line-height:1.7;color:${THEME.ink};">${items}</ul>`,
       ),
     );
   }
@@ -157,8 +210,8 @@ export function renderIssueHtml(input: {
       .join("");
     rows.push(
       row(
-        sectionHeading("⚡", "Quick Hits") +
-          `<ul style="margin:0;padding-left:20px;font-size:16px;line-height:1.6;color:${THEME.ink};">${items}</ul>`,
+        sectionBadge("⚡", "Quick Hits") +
+          `<ul style="margin:0;padding-left:20px;font-size:16px;line-height:1.7;color:${THEME.ink};">${items}</ul>`,
       ),
     );
   }
@@ -168,8 +221,8 @@ export function renderIssueHtml(input: {
     const st = draft.statOfDay;
     rows.push(
       row(
-        sectionHeading("📈", "Stat of the Day") +
-          `<div style="font-size:26px;font-weight:800;color:${THEME.accent};">${esc(st.stat)}</div>` +
+        sectionBadge("📈", "Stat of the Day") +
+          `<div style="font-size:30px;font-weight:800;color:${THEME.statAccent};letter-spacing:-0.01em;">${esc(st.stat)}</div>` +
           `<div style="font-size:16px;line-height:1.6;color:${THEME.ink};margin-top:4px;">${esc(st.context)} ${link(st.sourceUrl, "↗")}</div>`,
       ),
     );
@@ -198,6 +251,7 @@ export function renderIssueHtml(input: {
 <meta charset="utf-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1"/>
 <meta name="color-scheme" content="light dark"/>
+<meta name="supported-color-schemes" content="light dark"/>
 <title>${esc(subject)}</title>
 </head>
 <body style="margin:0;padding:0;background-color:${THEME.pageBg};">
@@ -205,7 +259,7 @@ export function renderIssueHtml(input: {
 <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background-color:${THEME.pageBg};">
   <tr>
     <td align="center" style="padding:16px;">
-      <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="width:100%;max-width:600px;background-color:${THEME.cardBg};border:1px solid ${THEME.rule};border-radius:8px;font-family:${THEME.fontStack};word-wrap:break-word;overflow-wrap:break-word;table-layout:fixed;">
+      <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="width:100%;max-width:600px;background-color:${THEME.cardBg};border:1px solid ${THEME.cardBorder};border-radius:8px;font-family:${THEME.fontStack};word-wrap:break-word;overflow-wrap:break-word;table-layout:fixed;">
 ${body}
       </table>
     </td>

@@ -1,5 +1,6 @@
 /**
- * Colour palette for the rendered issue.
+ * Colour palette for the rendered issue, sourced from the "Issue Email v2"
+ * visual design (Claude Design project c42cae61-b48d-4a1a-9de9-de28e3c9f67c).
  *
  * Dark-mode strategy: the spec asks for "all CSS inline" AND "dark-mode-safe
  * colours". A <style> block with @media (prefers-color-scheme) would be the
@@ -11,15 +12,24 @@
  * so structure survives inversion. Recorded in ASSUMPTIONS.md.
  */
 export const THEME = {
-  pageBg: "#f4f1ea",
-  cardBg: "#ffffff",
-  ink: "#20242c",
-  muted: "#5b6270",
-  accent: "#b3541e",
-  accentInk: "#ffffff",
-  rule: "#e2ddd2",
-  tickerUp: "#1c7c4c",
-  tickerDown: "#b3261e",
+  pageBg: "#F0F1EC",
+  cardBg: "#FFFFFF",
+  /** Outer card + decorative image borders. */
+  cardBorder: "#DFE1D9",
+  /** Internal row/section dividers. */
+  rule: "#E7E9E1",
+  ink: "#1A1C16",
+  muted: "#6B6F63",
+  /** Links, the back-to-archive breadcrumb, the masthead accent mark. */
+  accent: "#6E8A0F",
+  /** Section-label pill background; pairs with `ink` for the pill's text. */
+  badgeBg: "#C6DA3E",
+  tickerUp: "#1D7A4C",
+  tickerDown: "#B23A2E",
+  /** Stat of the Day's big number — distinct from `accent` so it reads as data, not a link. */
+  statAccent: "#5D7A0C",
+  /** Fill for the decorative per-section image (see sectionImage() in html.ts). */
+  imageBg: "#EDEFE4",
   fontStack:
     "-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif",
 } as const;
