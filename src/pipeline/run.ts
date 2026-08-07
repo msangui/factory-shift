@@ -6,7 +6,7 @@ import { ingest } from "@/ingest/index";
 import { getIssue, nextIssueNumber, recentIssueTitles, saveHold, saveIssue, type IssueStatus } from "@/lib/db";
 import { TokenLedger } from "@/lib/llm";
 import { log } from "@/lib/logger";
-import { isoDateInTz } from "@/lib/util";
+import { isoDateInTz, normalizeSiteUrl } from "@/lib/util";
 
 export const NEWSLETTER_TZ = "America/New_York";
 
@@ -29,7 +29,7 @@ export interface PipelineSummary {
 export async function runPipeline(opts: { force?: boolean; now?: Date } = {}): Promise<PipelineSummary> {
   const now = opts.now ?? new Date();
   const issueDate = isoDateInTz(now, NEWSLETTER_TZ);
-  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "http://localhost:3000";
+  const siteUrl = normalizeSiteUrl(process.env.NEXT_PUBLIC_SITE_URL || "http://localhost:3000");
 
   const existing = await getIssue(issueDate);
   if (existing && !opts.force) {

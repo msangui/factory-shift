@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { avgSentenceLength, containsNumber, countWords, normalizeTitle, normalizeUrl, truncate } from "@/lib/util";
+import { avgSentenceLength, containsNumber, countWords, normalizeSiteUrl, normalizeTitle, normalizeUrl, truncate } from "@/lib/util";
 import { parseMoney } from "@/gauntlet/critics/financial";
 
 describe("util", () => {
@@ -16,6 +16,12 @@ describe("util", () => {
   it("normalizes urls (strips tracking + trailing slash)", () => {
     expect(normalizeUrl("https://Example.com/a/?utm_source=x")).toBe("https://example.com/a");
     expect(normalizeUrl("https://example.com/a#frag")).toBe("https://example.com/a");
+  });
+
+  it("normalizes site urls (adds a missing scheme, drops trailing slash)", () => {
+    expect(normalizeSiteUrl("morning-shelf.vercel.app")).toBe("https://morning-shelf.vercel.app");
+    expect(normalizeSiteUrl("https://morning-shelf.vercel.app/")).toBe("https://morning-shelf.vercel.app");
+    expect(normalizeSiteUrl("http://localhost:3000")).toBe("http://localhost:3000");
   });
 
   it("normalizes titles", () => {

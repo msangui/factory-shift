@@ -90,6 +90,19 @@ export function seededPick<T>(items: readonly T[], seed: string): T {
   return items[idx] as T;
 }
 
+/**
+ * Ensure a site URL has a scheme and no trailing slash. Without this, a
+ * misconfigured NEXT_PUBLIC_SITE_URL like "example.com" (missing "https://")
+ * turns every link built from it (footer, archive breadcrumb) into a
+ * scheme-relative string that browsers resolve against the *current* page's
+ * path instead of treating it as absolute — e.g. an href of "example.com"
+ * on /issues/2026-08-07 resolves to /issues/example.com, not example.com.
+ */
+export function normalizeSiteUrl(raw: string): string {
+  const trimmed = raw.trim().replace(/\/$/, "");
+  return /^https?:\/\//i.test(trimmed) ? trimmed : `https://${trimmed}`;
+}
+
 /** Strip HTML tags and collapse whitespace (for RSS summary snippets). */
 export function stripHtml(html: string): string {
   return html
