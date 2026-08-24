@@ -68,7 +68,7 @@ export async function runPipeline(opts: { force?: boolean; now?: Date } = {}): P
   const subject =
     result.finalDraft.subjectCandidates[result.finalDraft.chosenSubjectIndex] ??
     result.finalDraft.subjectCandidates[0] ??
-    "The Morning Shelf";
+    "The Factory Shift";
 
   const status: IssueStatus =
     result.status === "hold"

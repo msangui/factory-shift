@@ -1,4 +1,4 @@
--- The Morning Shelf — initial schema.
+-- The Factory Shift — initial schema.
 -- Apply with: npm run migrate  (idempotent; safe to re-run).
 
 CREATE TABLE IF NOT EXISTS source_cache (

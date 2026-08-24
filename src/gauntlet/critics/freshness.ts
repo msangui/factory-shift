@@ -10,10 +10,10 @@ import { type Critic, type GauntletContext, type Verdict, type Violation } from 
  * mostly a safety net, since ingest already excludes previously-used URLs and
  * titles from the candidate pool before the drafter ever sees them:
  *  - a cited source URL already used in the last 5 issues, in ANY section
- *    (Big Story, Retail Tech, CPG Corner, Deal Flow, Quick Hits, Stat of the
+ *    (Big Story, Shop Floor, OEM Corner, Deal Flow, Quick Hits, Stat of the
  *    Day) is flagged, since a repeated URL is an unambiguous repeat regardless
  *    of rewording;
- *  - a headline (Big Story/Retail Tech/CPG Corner, the only sections with a
+ *  - a headline (Big Story/Shop Floor/OEM Corner, the only sections with a
  *    "title") that exactly matches one from the last 5 issues is flagged too,
  *    catching the case where a different outlet re-covers the same event
  *    under a new URL.
@@ -86,8 +86,8 @@ export const freshnessCritic: Critic = {
 function sectionSources(d: GauntletContext["draft"]): { key: string; urls: string[] }[] {
   const out: { key: string; urls: string[] }[] = [];
   if (d.bigStory) out.push({ key: "bigStory", urls: d.bigStory.sourceUrls });
-  if (d.retailTech) out.push({ key: "retailTech", urls: d.retailTech.sourceUrls });
-  if (d.cpgCorner) out.push({ key: "cpgCorner", urls: d.cpgCorner.sourceUrls });
+  if (d.shopFloor) out.push({ key: "shopFloor", urls: d.shopFloor.sourceUrls });
+  if (d.oemCorner) out.push({ key: "oemCorner", urls: d.oemCorner.sourceUrls });
   if (d.dealFlow) d.dealFlow.forEach((b, i) => out.push({ key: `dealFlow[${i}]`, urls: [b.sourceUrl] }));
   d.quickHits.forEach((h, i) => out.push({ key: `quickHits[${i}]`, urls: [h.sourceUrl] }));
   if (d.statOfDay) out.push({ key: "statOfDay", urls: [d.statOfDay.sourceUrl] });
@@ -97,7 +97,7 @@ function sectionSources(d: GauntletContext["draft"]): { key: string; urls: strin
 function currentTitles(d: GauntletContext["draft"]): [string, string][] {
   const out: [string, string][] = [];
   if (d.bigStory) out.push(["bigStory", d.bigStory.title]);
-  if (d.retailTech) out.push(["retailTech", d.retailTech.title]);
-  if (d.cpgCorner) out.push(["cpgCorner", d.cpgCorner.title]);
+  if (d.shopFloor) out.push(["shopFloor", d.shopFloor.title]);
+  if (d.oemCorner) out.push(["oemCorner", d.oemCorner.title]);
   return out;
 }

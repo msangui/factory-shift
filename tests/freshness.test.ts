@@ -29,8 +29,8 @@ describe("freshnessCritic", () => {
 
   it("flags a source that is not in the ingest window at all", async () => {
     const d = makeValidDraft();
-    d.retailTech!.sourceUrls = ["https://example.com/not-ingested"];
+    d.shopFloor!.sourceUrls = ["https://example.com/not-ingested"];
     const v = await freshnessCritic.run(makeCtx(d));
-    expect(v.violations.some((x) => x.location === "retailTech")).toBe(true);
+    expect(v.violations.some((x) => x.location === "shopFloor")).toBe(true);
   });
 });

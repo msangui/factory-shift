@@ -25,8 +25,8 @@ async function gatherEvidence(ctx: GauntletContext): Promise<{ url: string; titl
   const add = (u: string) => cited.add(normalizeUrl(u));
   const d = ctx.draft;
   d.bigStory?.sourceUrls.forEach(add);
-  d.retailTech?.sourceUrls.forEach(add);
-  d.cpgCorner?.sourceUrls.forEach(add);
+  d.shopFloor?.sourceUrls.forEach(add);
+  d.oemCorner?.sourceUrls.forEach(add);
   d.dealFlow?.forEach((b) => add(b.sourceUrl));
   d.quickHits.forEach((h) => add(h.sourceUrl));
   if (d.statOfDay) add(d.statOfDay.sourceUrl);
@@ -51,8 +51,8 @@ function draftForReview(d: GauntletContext["draft"]): string {
   parts.push(`Opening: ${d.openingLine}`);
   d.ticker.moverNotes.forEach((m) => parts.push(`Ticker note (${m.symbol}): ${m.why}`));
   if (d.bigStory) parts.push(`Big Story "${d.bigStory.title}" [${d.bigStory.sourceUrls.join(", ")}]: ${d.bigStory.body} Why it matters: ${d.bigStory.whyItMatters}`);
-  if (d.retailTech) parts.push(`Retail Tech "${d.retailTech.title}" [${d.retailTech.sourceUrls.join(", ")}]: ${d.retailTech.body}`);
-  if (d.cpgCorner) parts.push(`CPG Corner "${d.cpgCorner.title}" [${d.cpgCorner.sourceUrls.join(", ")}]: ${d.cpgCorner.body}`);
+  if (d.shopFloor) parts.push(`Shop Floor "${d.shopFloor.title}" [${d.shopFloor.sourceUrls.join(", ")}]: ${d.shopFloor.body}`);
+  if (d.oemCorner) parts.push(`OEM Corner "${d.oemCorner.title}" [${d.oemCorner.sourceUrls.join(", ")}]: ${d.oemCorner.body}`);
   d.dealFlow?.forEach((b, i) => parts.push(`Deal Flow ${i} [${b.sourceUrl}]: ${b.text}`));
   d.quickHits.forEach((h, i) => parts.push(`Quick Hit ${i} [${h.sourceUrl}]: ${h.text}`));
   if (d.statOfDay) parts.push(`Stat [${d.statOfDay.sourceUrl}]: ${d.statOfDay.stat} — ${d.statOfDay.context}`);
@@ -116,8 +116,8 @@ Produce the claims table and the verdict.`;
 function citedBySection(d: GauntletContext["draft"]): { key: string; urls: string[] }[] {
   const out: { key: string; urls: string[] }[] = [];
   if (d.bigStory) out.push({ key: "bigStory", urls: d.bigStory.sourceUrls });
-  if (d.retailTech) out.push({ key: "retailTech", urls: d.retailTech.sourceUrls });
-  if (d.cpgCorner) out.push({ key: "cpgCorner", urls: d.cpgCorner.sourceUrls });
+  if (d.shopFloor) out.push({ key: "shopFloor", urls: d.shopFloor.sourceUrls });
+  if (d.oemCorner) out.push({ key: "oemCorner", urls: d.oemCorner.sourceUrls });
   if (d.dealFlow) d.dealFlow.forEach((b, i) => out.push({ key: `dealFlow[${i}]`, urls: [b.sourceUrl] }));
   d.quickHits.forEach((h, i) => out.push({ key: `quickHits[${i}]`, urls: [h.sourceUrl] }));
   if (d.statOfDay) out.push({ key: "statOfDay", urls: [d.statOfDay.sourceUrl] });

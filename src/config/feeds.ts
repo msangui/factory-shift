@@ -1,80 +1,71 @@
 /**
  * RSS/Atom feed seed list for ingestion.
  *
- * Editorial bias: Retail & CPG, weighted toward technology and financial news.
- * Feeds are fetched in parallel; a feed that 404s or times out is skipped and
- * logged, never fatal (see src/ingest/rss.ts).
+ * Editorial bias: Automotive & Manufacturing, weighted toward technology and
+ * financial news. Feeds are fetched in parallel; a feed that 404s or times out
+ * is skipped and logged, never fatal (see src/ingest/rss.ts).
  *
  * `weight` nudges the drafter's story ranking — higher means the source skews
  * toward the tech/financial coverage we want to lead with. It is a soft signal,
  * not a filter.
  *
  * `verified` marks whether the feed URL has actually been observed returning
- * parseable RSS/Atom XML in a real run. Unverified entries were added from
- * platform conventions (Substack always serves `/feed`; WordPress trade sites
- * conventionally serve `/feed/`) without being fetched first — this repo's
- * sandbox has no outbound web access, so they could not be checked before
- * being added. `rss.feed.ok` / `rss.feed.empty` log lines (per feed, per run)
- * are how you confirm or prune them — see ASSUMPTIONS.md's 2026-08-06 entry.
+ * parseable RSS/Atom XML in a real run. Every entry below is currently
+ * UNVERIFIED: the URLs were derived from each publisher's platform convention
+ * (WordPress `/feed/`, Industry Dive `/feeds/news/`, Arc XP outbound feeds,
+ * etc.) but this repo's sandbox has no outbound web access, so none could be
+ * fetched-and-confirmed before being added. `rss.feed.ok` / `rss.feed.empty`
+ * log lines (per feed, per run) are how you confirm or prune them — see the
+ * ASSUMPTIONS.md note on feed verification. Expect to correct a handful of
+ * these URLs after the first live run.
  */
 export interface FeedSource {
   name: string;
   url: string;
-  /** 1 (general) … 3 (strong tech/financial retail-CPG signal). */
+  /** 1 (general) … 3 (strong tech/financial automotive-manufacturing signal). */
   weight: 1 | 2 | 3;
   /** False = URL guessed from platform convention, never fetched-and-confirmed. */
   verified?: boolean;
 }
 
 export const FEEDS: FeedSource[] = [
-  // ── Verified (observed producing items in a live run) ─────────────────────
-  { name: "Retail Dive", url: "https://www.retaildive.com/feeds/news/", weight: 3, verified: true },
-  { name: "Grocery Dive", url: "https://www.grocerydive.com/feeds/news/", weight: 3, verified: true },
-  { name: "Food Dive", url: "https://www.fooddive.com/feeds/news/", weight: 2, verified: true },
-  { name: "Modern Retail", url: "https://www.modernretail.co/feed/", weight: 3, verified: true },
-  { name: "CNBC Retail", url: "https://www.cnbc.com/id/10000116/device/rss/rss.html", weight: 2, verified: true },
-  // Business of Fashion 403'd for us in production (bot-blocked) — the URL is a
-  // structurally correct Arc XP feed endpoint, but no items have actually come
-  // through. Kept in case the block lifts.
-  { name: "Business of Fashion", url: "https://www.businessoffashion.com/arc/outboundfeeds/rss/?outputType=xml", weight: 1 },
-  // Reuters Business 404'd for us in production; URL likely stale. Kept pending
-  // a working replacement.
-  { name: "Reuters Business", url: "https://www.reutersagency.com/feed/?best-topics=business-finance&post_type=best", weight: 2 },
-  // Press-release wires for the majors (broad; filtered by relevance downstream).
-  { name: "PR Newswire — Retail", url: "https://www.prnewswire.com/rss/consumer-products-retail-latest-news/consumer-products-retail-latest-news-list.rss", weight: 1, verified: true },
+  // ── Automotive ────────────────────────────────────────────────────────────
+  { name: "Automotive News", url: "https://www.autonews.com/arc/outboundfeeds/rss/?outputType=xml", weight: 3 },
+  { name: "Automotive World", url: "https://www.automotiveworld.com/feed/", weight: 2 },
+  { name: "Automotive Industries (AI Online)", url: "https://ai-online.com/feed/", weight: 1 },
+  { name: "Automotive Powertrain Technology Intl", url: "https://www.automotivepowertraintechnologyinternational.com/feed/", weight: 1 },
+  { name: "Center for Automotive Research", url: "https://www.cargroup.org/feed/", weight: 1 },
+  { name: "InsideEVs", url: "https://insideevs.com/rss/articles/all/", weight: 2 },
 
-  // ── Added 2026-08-06, unverified (platform-convention URLs; see file header) ─
-  // Retail
-  { name: "Chain Store Age", url: "https://chainstoreage.com/feed", weight: 2 },
-  { name: "WWD", url: "https://wwd.com/feed/", weight: 1 },
-  { name: "NRF News", url: "https://nrf.com/blog/feed", weight: 1 },
+  // ── Manufacturing ─────────────────────────────────────────────────────────
+  { name: "Manufacturing Dive", url: "https://www.manufacturingdive.com/feeds/news/", weight: 3 },
+  { name: "Smart Industry", url: "https://www.smartindustry.com/feed/", weight: 3 },
+  { name: "IndustryWeek", url: "https://www.industryweek.com/rss.xml", weight: 3 },
+  { name: "Automation.com", url: "https://www.automation.com/feed", weight: 2 },
+  { name: "ManufacturingTomorrow", url: "https://www.manufacturingtomorrow.com/rss/news/", weight: 2 },
+  { name: "Assembly Magazine", url: "https://www.assemblymag.com/rss/articles", weight: 2 },
+  { name: "Quality Digest", url: "https://www.qualitydigest.com/rss.xml", weight: 1 },
+  { name: "Manufacturing Digital", url: "https://manufacturingdigital.com/feed", weight: 2 },
 
-  // CPG
-  { name: "Consumer Goods Technology", url: "https://consumergoods.com/feed", weight: 3 },
-  { name: "Consumer Brands Association", url: "https://consumerbrandsassociation.org/news-blog/feed", weight: 1 },
+  // ── Tech / AI in automotive & manufacturing ───────────────────────────────
+  { name: "SAE International", url: "https://www.sae.org/rss", weight: 2 },
+  { name: "Automotive Dive", url: "https://www.automotivedive.com/feeds/news/", weight: 3 },
+  { name: "Manufacturing.net", url: "https://www.manufacturing.net/rss/all", weight: 2 },
+  { name: "Robotics Business Review", url: "https://www.roboticsbusinessreview.com/feed/", weight: 2 },
+  { name: "IoT World Today", url: "https://www.iotworldtoday.com/feed/", weight: 1 },
 
-  // Store tech / retail systems
-  { name: "RIS News", url: "https://risnews.com/feed", weight: 3 },
-  { name: "Retail TouchPoints", url: "https://www.retailtouchpoints.com/feed", weight: 3 },
-  { name: "Retail Technology Magazine", url: "https://retailtechnology.co.uk/feed/", weight: 2 },
+  // ── Analysts / primary sources ────────────────────────────────────────────
+  // Low-confidence: analyst sites rarely expose per-industry public RSS. Kept
+  // at weight 1 (insight, not daily news) and expected to need pruning.
+  { name: "McKinsey Insights", url: "https://www.mckinsey.com/insights/rss", weight: 1 },
 
-  // AI / digital / agentic
-  { name: "The Information", url: "https://www.theinformation.com/feed", weight: 2 },
-  { name: "Stratechery", url: "https://stratechery.com/feed/", weight: 2 },
-  { name: "Import AI", url: "https://importai.substack.com/feed", weight: 1 },
-  { name: "Latent Space", url: "https://www.latent.space/feed", weight: 1 },
-  { name: "Salesforce Retail Blog", url: "https://www.salesforce.com/blog/category/retail/feed/", weight: 2 },
-  { name: "Microsoft Industry Blog — Retail", url: "https://www.microsoft.com/en-us/industry/blog/retail/feed/", weight: 2 },
-  { name: "AWS Retail Blog", url: "https://aws.amazon.com/blogs/industries/category/retail/feed/", weight: 2 },
-
-  // Ecommerce
-  { name: "Digital Commerce 360", url: "https://www.digitalcommerce360.com/feed/", weight: 3 },
-  { name: "2PM", url: "https://2pml.com/feed", weight: 2 },
-  { name: "Shopifreaks", url: "https://www.shopifreaks.com/feed/", weight: 1 },
-
-  // Not added — see ASSUMPTIONS.md 2026-08-06 for why (no plausible public
-  // RSS/Atom mechanism, or an app rather than a content feed):
-  //   Retail Brew, Vogue Business, McKinsey Consumer & Retail, Gartner Retail,
-  //   Forrester, IDC Retail Insights, Coresight Research, Quartr,
-  //   Google Cloud Retail Blog (topic-feed URL pattern not confidently known)
+  // Not added — no reliable public per-industry RSS/Atom mechanism. The topic
+  // pages requested (below) render HTML only; adding them as feeds would just
+  // log rss.feed.empty every run. Tracked here for provenance; wire them in via
+  // a dedicated scraper (see BACKLOG.md) if their content is essential:
+  //   Gartner Manufacturing   https://www.gartner.com/en/industries/manufacturing
+  //   Gartner Automotive      https://www.gartner.com/en/industries/automotive
+  //   McKinsey Auto & Assembly (article hub; global Insights RSS above is the closest feed)
+  //     https://www.mckinsey.com/industries/automotive-and-assembly/our-insights
+  //   Deloitte Manufacturing  https://www2.deloitte.com/us/en/pages/manufacturing/topics/manufacturing.html
 ];

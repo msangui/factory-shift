@@ -34,7 +34,7 @@ export const bulletSchema = z.object({
 });
 
 export const quickHitSchema = z.object({
-  text: z.string().describe("One-liner, mixed retail/CPG."),
+  text: z.string().describe("One-liner, mixed automotive/manufacturing."),
   sourceUrl: z.string().url(),
 });
 
@@ -60,8 +60,8 @@ export const issueDraftSchema = z.object({
       .describe("A one-line 'why' for each of the top 3 movers (order matches the snapshot)."),
   }),
   bigStory: bigStorySchema.nullable(),
-  retailTech: sourced.nullable().describe("Commerce tech / AI / retail media / supply chain. Null in short-form."),
-  cpgCorner: sourced.nullable().describe("A CPG player: earnings, pricing, portfolio, DTC. Null in short-form."),
+  shopFloor: sourced.nullable().describe("Factory/vehicle tech: automation, robotics, IIoT, AI, EV/ADAS/software-defined vehicles, supply chain. Null in short-form."),
+  oemCorner: sourced.nullable().describe("An automaker or manufacturer: earnings, pricing, capacity, product portfolio, capital allocation. Null in short-form."),
   dealFlow: z.array(bulletSchema).nullable().describe("3–5 bullets. Null in short-form."),
   quickHits: z.array(quickHitSchema).describe("4–6 one-liners."),
   statOfDay: statSchema.nullable().describe("Null in short-form."),

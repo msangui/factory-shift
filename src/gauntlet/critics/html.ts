@@ -112,10 +112,10 @@ async function headCheck(url: string): Promise<HeadResult> {
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), 8000);
   try {
-    let res = await fetch(url, { method: "HEAD", redirect: "follow", signal: controller.signal, headers: { "user-agent": "MorningShelfBot/0.1" } });
+    let res = await fetch(url, { method: "HEAD", redirect: "follow", signal: controller.signal, headers: { "user-agent": "FactoryShiftBot/0.1" } });
     // Some servers reject HEAD; retry with a lightweight GET.
     if (res.status === 405 || res.status === 501) {
-      res = await fetch(url, { method: "GET", redirect: "follow", signal: controller.signal, headers: { "user-agent": "MorningShelfBot/0.1", range: "bytes=0-0" } });
+      res = await fetch(url, { method: "GET", redirect: "follow", signal: controller.signal, headers: { "user-agent": "FactoryShiftBot/0.1", range: "bytes=0-0" } });
     }
     // Bot-blocking answers still prove the link resolves to a real host.
     if (res.ok || [401, 403, 405, 429].includes(res.status)) return { url, ok: true, reason: String(res.status) };

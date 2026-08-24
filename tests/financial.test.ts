@@ -17,14 +17,14 @@ describe("financialCritic", () => {
 
   it("flags a mover that is not one of today's top 3", async () => {
     const d = makeValidDraft();
-    d.ticker.moverNotes[0] = { symbol: "AMZN", why: "barely moved" }; // AMZN is not a top mover in the fixture
+    d.ticker.moverNotes[0] = { symbol: "APTV", why: "barely moved" }; // APTV is not a top mover in the fixture
     const v = await financialCritic.run(makeCtx(d));
     expect(v.violations.some((x) => /not one of today's top 3/.test(x.issue))).toBe(true);
   });
 
   it("flags a percentage that contradicts the snapshot", async () => {
     const d = makeValidDraft();
-    d.ticker.moverNotes[0] = { symbol: "WMT", why: "up 9% on earnings" }; // snapshot says +3.2%
+    d.ticker.moverNotes[0] = { symbol: "TSLA", why: "up 9% on earnings" }; // snapshot says +3.2%
     const v = await financialCritic.run(makeCtx(d));
     expect(v.violations.some((x) => /snapshot shows/.test(x.issue))).toBe(true);
   });

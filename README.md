@@ -1,17 +1,18 @@
-# The Morning Shelf
+# The Factory Shift
 
-A daily **Retail & CPG** newsletter with a hard editorial bias toward **technology and
-financial** news (earnings, M&A, capital allocation, retail media, supply-chain tech, AI
-adoption, commerce platforms, pricing/elasticity, margins). Voice: Morning Brew — a smart
-friend explaining business news over coffee.
+A daily **Automotive & Manufacturing** newsletter with a hard editorial bias toward
+**technology and financial** news (earnings, M&A, capital allocation, plant capacity and
+capex, EV/software-defined vehicles, ADAS/autonomy, factory automation and robotics,
+industrial AI and IIoT, supply-chain and reshoring). Voice: Morning Brew — a smart friend
+explaining business news over coffee.
 
 Every issue is generated through **the Gauntlet**: a draft must pass six independent
 critics before it ships. If it can't be fixed in three iterations, it's **held**, never
 shipped degraded — unless `AUTO_PUBLISH_ON_HOLD=1` is explicitly set, an opt-in,
 default-off deviation that removes this gate (see [`ASSUMPTIONS.md`](./ASSUMPTIONS.md)).
 
-> **Naming.** Three candidates were floated before launch — *Aisle & Ledger* (the spec's
-> working name), *Checkout*, and *Shelf Life*. The operator chose **The Morning Shelf**.
+> **Naming.** Three candidates were floated before launch — *Shift Change*, *The Line*, and
+> *Torque & Ledger*. The operator chose **The Factory Shift**.
 
 ---
 
