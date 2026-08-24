@@ -59,7 +59,7 @@ async function fetchFeed(feed: FeedSource): Promise<CachedSource[]> {
   try {
     const res = await fetch(feed.url, {
       signal: controller.signal,
-      headers: { "user-agent": "MorningShelfBot/0.1 (+newsletter ingestion)" },
+      headers: { "user-agent": "FactoryShiftBot/0.1 (+newsletter ingestion)" },
     });
     if (!res.ok) {
       log.warn("rss.fetch.non_ok", { feed: feed.name, status: res.status });

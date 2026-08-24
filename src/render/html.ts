@@ -140,7 +140,7 @@ export function renderIssueHtml(input: {
   // Decorative divider into the story sections.
   rows.push(
     `<tr><td style="padding:14px 24px;">
-      <div style="text-align:center;font-size:11px;font-weight:700;letter-spacing:0.14em;text-transform:uppercase;color:${THEME.muted};">— Time to shelve —</div>
+      <div style="text-align:center;font-size:11px;font-weight:700;letter-spacing:0.14em;text-transform:uppercase;color:${THEME.muted};">— On the line —</div>
     </td></tr>`,
   );
 
@@ -150,23 +150,23 @@ export function renderIssueHtml(input: {
     const readMore = bs.sourceUrls[0] ? ` ${link(bs.sourceUrls[0], "Read more →")}` : "";
     rows.push(
       `<tr><td style="padding:6px 24px 20px 24px;border-bottom:1px solid ${THEME.rule};">
-        ${sectionBadge("🛒", "The Big Story")}
+        ${sectionBadge("🏭", "The Big Story")}
         <div style="font-size:17px;font-weight:700;color:${THEME.ink};margin-bottom:10px;">${esc(bs.title)}</div>
-        ${sectionImage("🛒", 240)}
+        ${sectionImage("🏭", 240)}
         ${paragraph(bs.body)}
         <div style="font-size:15px;line-height:1.6;color:${THEME.ink};margin-top:10px;"><strong>Why it matters:</strong> ${esc(bs.whyItMatters)}${readMore}</div>
-        <div style="font-size:13px;font-style:italic;color:${THEME.muted};margin-top:10px;">—The Shelf Desk</div>
+        <div style="font-size:13px;font-style:italic;color:${THEME.muted};margin-top:10px;">—The Floor Desk</div>
       </td></tr>`,
     );
   }
 
-  // Retail Tech.
-  if (draft.retailTech) {
-    const s = draft.retailTech;
+  // Shop Floor.
+  if (draft.shopFloor) {
+    const s = draft.shopFloor;
     const readMore = s.sourceUrls[0] ? ` ${link(s.sourceUrls[0], "Read more →")}` : "";
     rows.push(
       row(
-        sectionBadge("🤖", "Retail Tech") +
+        sectionBadge("🤖", "Shop Floor") +
           `<div style="font-size:16px;font-weight:700;color:${THEME.ink};margin-bottom:10px;">${esc(s.title)}</div>` +
           sectionImage("🤖", 200) +
           paragraph(s.body) +
@@ -175,15 +175,15 @@ export function renderIssueHtml(input: {
     );
   }
 
-  // CPG Corner.
-  if (draft.cpgCorner) {
-    const s = draft.cpgCorner;
+  // OEM Corner.
+  if (draft.oemCorner) {
+    const s = draft.oemCorner;
     const readMore = s.sourceUrls[0] ? ` ${link(s.sourceUrls[0], "Read more →")}` : "";
     rows.push(
       row(
-        sectionBadge("🧴", "CPG Corner") +
+        sectionBadge("🚗", "OEM Corner") +
           `<div style="font-size:16px;font-weight:700;color:${THEME.ink};margin-bottom:10px;">${esc(s.title)}</div>` +
-          sectionImage("🧴", 200) +
+          sectionImage("🚗", 200) +
           paragraph(s.body) +
           `<div style="margin-top:6px;font-size:14px;">${readMore}</div>`,
       ),

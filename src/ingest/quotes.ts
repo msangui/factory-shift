@@ -25,7 +25,7 @@ async function fetchQuote(symbol: string, name: string): Promise<Quote> {
       signal: controller.signal,
       headers: {
         // A browser-like UA avoids Yahoo's bot rejection.
-        "user-agent": "Mozilla/5.0 (compatible; MorningShelfBot/0.1)",
+        "user-agent": "Mozilla/5.0 (compatible; FactoryShiftBot/0.1)",
         accept: "application/json",
       },
     });

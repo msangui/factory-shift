@@ -3,7 +3,7 @@ import { verdictSchema, type Critic, type GauntletContext, type Verdict } from "
 import { criticModel, generateStructured } from "@/lib/llm";
 import { avgSentenceLength } from "@/lib/util";
 
-const VOICE_SYSTEM = `You are the VOICE CRITIC for "The Morning Shelf". You never rewrite the draft — you only judge it against a Morning Brew fidelity rubric and return a score from 0 to 10.
+const VOICE_SYSTEM = `You are the VOICE CRITIC for "The Factory Shift". You never rewrite the draft — you only judge it against a Morning Brew fidelity rubric and return a score from 0 to 10.
 
 Score the draft on:
 (a) Conversational register — contractions used, reads like a smart friend over coffee.
@@ -17,8 +17,8 @@ Score fairly on a 0–10 scale: 7–8 is solid Morning Brew that's ready to send
 function proseForReview(d: GauntletContext["draft"]): string {
   const parts: string[] = [`Opening: ${d.openingLine}`];
   if (d.bigStory) parts.push(`Big Story: ${d.bigStory.title}. ${d.bigStory.body} Why it matters: ${d.bigStory.whyItMatters}`);
-  if (d.retailTech) parts.push(`Retail Tech: ${d.retailTech.title}. ${d.retailTech.body}`);
-  if (d.cpgCorner) parts.push(`CPG Corner: ${d.cpgCorner.title}. ${d.cpgCorner.body}`);
+  if (d.shopFloor) parts.push(`Shop Floor: ${d.shopFloor.title}. ${d.shopFloor.body}`);
+  if (d.oemCorner) parts.push(`OEM Corner: ${d.oemCorner.title}. ${d.oemCorner.body}`);
   if (d.dealFlow) parts.push(`Deal Flow:\n${d.dealFlow.map((b) => `- ${b.text}`).join("\n")}`);
   parts.push(`Quick Hits:\n${d.quickHits.map((h) => `- ${h.text}`).join("\n")}`);
   if (d.statOfDay) parts.push(`Stat: ${d.statOfDay.stat} — ${d.statOfDay.context}`);

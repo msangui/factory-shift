@@ -52,16 +52,16 @@ export const structureCritic: Critic = {
 
     if (short) {
       // Short-form: these must be absent.
-      for (const [k, val] of [["retailTech", d.retailTech], ["cpgCorner", d.cpgCorner], ["dealFlow", d.dealFlow], ["statOfDay", d.statOfDay]] as const) {
+      for (const [k, val] of [["shopFloor", d.shopFloor], ["oemCorner", d.oemCorner], ["dealFlow", d.dealFlow], ["statOfDay", d.statOfDay]] as const) {
         if (val) v.push({ location: k, issue: `${k} must be null in a short-form issue.`, fix_suggestion: `Set ${k} to null.` });
       }
     } else {
       // Full issue: all sections required within counts.
-      if (!d.retailTech) v.push({ location: "retailTech", issue: "Missing Retail Tech.", fix_suggestion: "Add the Retail Tech section." });
-      else checkWords(v, "retailTech.body", d.retailTech.body, LENGTHS.retailTechWords);
+      if (!d.shopFloor) v.push({ location: "shopFloor", issue: "Missing Shop Floor.", fix_suggestion: "Add the Shop Floor section." });
+      else checkWords(v, "shopFloor.body", d.shopFloor.body, LENGTHS.shopFloorWords);
 
-      if (!d.cpgCorner) v.push({ location: "cpgCorner", issue: "Missing CPG Corner.", fix_suggestion: "Add the CPG Corner section." });
-      else checkWords(v, "cpgCorner.body", d.cpgCorner.body, LENGTHS.cpgCornerWords);
+      if (!d.oemCorner) v.push({ location: "oemCorner", issue: "Missing OEM Corner.", fix_suggestion: "Add the OEM Corner section." });
+      else checkWords(v, "oemCorner.body", d.oemCorner.body, LENGTHS.oemCornerWords);
 
       if (!d.dealFlow || d.dealFlow.length < LENGTHS.dealFlowBullets.min || d.dealFlow.length > LENGTHS.dealFlowBullets.max) {
         v.push({ location: "dealFlow", issue: `Deal Flow must have ${LENGTHS.dealFlowBullets.min}–${LENGTHS.dealFlowBullets.max} bullets.`, fix_suggestion: "Adjust the bullet count." });
@@ -108,8 +108,8 @@ export function bodyWordCount(d: GauntletContext["draft"]): number {
   let n = countWords(d.openingLine);
   n += d.ticker.moverNotes.reduce((s, m) => s + countWords(m.why), 0);
   if (d.bigStory) n += countWords(d.bigStory.body) + countWords(d.bigStory.whyItMatters);
-  if (d.retailTech) n += countWords(d.retailTech.body);
-  if (d.cpgCorner) n += countWords(d.cpgCorner.body);
+  if (d.shopFloor) n += countWords(d.shopFloor.body);
+  if (d.oemCorner) n += countWords(d.oemCorner.body);
   if (d.dealFlow) n += d.dealFlow.reduce((s, b) => s + countWords(b.text), 0);
   n += d.quickHits.reduce((s, h) => s + countWords(h.text), 0);
   if (d.statOfDay) n += countWords(d.statOfDay.context);

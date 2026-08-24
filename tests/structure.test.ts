@@ -22,7 +22,7 @@ describe("structureCritic", () => {
 
   it("flags a Deal Flow bullet with no number", async () => {
     const d = makeValidDraft();
-    d.dealFlow![0] = { text: "a big retail acquisition happened yesterday morning", sourceUrl: "https://example.com/story-4" };
+    d.dealFlow![0] = { text: "a big supplier acquisition happened yesterday morning", sourceUrl: "https://example.com/story-4" };
     const v = await structureCritic.run(makeCtx(d));
     expect(v.violations.some((x) => x.location === "dealFlow[0]")).toBe(true);
   });
@@ -43,8 +43,8 @@ describe("structureCritic", () => {
 
   it("requires short-form sections to be null", async () => {
     const d = makeValidDraft();
-    d.isShortForm = true; // but retailTech/dealFlow/etc are still populated
+    d.isShortForm = true; // but shopFloor/dealFlow/etc are still populated
     const v = await structureCritic.run(makeCtx(d));
-    expect(v.violations.some((x) => x.location === "retailTech")).toBe(true);
+    expect(v.violations.some((x) => x.location === "shopFloor")).toBe(true);
   });
 });

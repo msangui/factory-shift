@@ -1,8 +1,8 @@
 {
-  "name": "morning-shelf",
+  "name": "factory-shift",
   "version": "0.1.0",
   "private": true,
-  "description": "The Morning Shelf — a daily Retail & CPG newsletter with a hard bias toward technology and financial news, generated through the Gauntlet quality loop.",
+  "description": "The Factory Shift — a daily Automotive & Manufacturing newsletter with a hard bias toward technology and financial news, generated through the Gauntlet quality loop.",
   "type": "module",
   "engines": {
     "node": ">=20"

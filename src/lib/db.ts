@@ -188,14 +188,14 @@ export async function recentIssueTitles(lookback: number): Promise<string[]> {
   for (const r of rows) {
     const b = r.body;
     if (b.bigStory) titles.push(b.bigStory.title);
-    if (b.retailTech) titles.push(b.retailTech.title);
-    if (b.cpgCorner) titles.push(b.cpgCorner.title);
+    if (b.shopFloor) titles.push(b.shopFloor.title);
+    if (b.oemCorner) titles.push(b.oemCorner.title);
   }
   return titles.map(normalizeTitle);
 }
 
 /**
- * Every source URL cited anywhere (Big Story, Retail Tech, CPG Corner, Deal
+ * Every source URL cited anywhere (Big Story, Shop Floor, OEM Corner, Deal
  * Flow bullets, Quick Hits, Stat of the Day) in the last N issues, normalized.
  * A URL already cited is an unambiguous repeat regardless of how its headline
  * gets reworded — this is the primary cross-issue duplicate signal, and it
@@ -213,8 +213,8 @@ export async function recentIssueSourceUrls(lookback: number): Promise<Set<strin
   for (const r of rows) {
     const b = r.body;
     if (b.bigStory) b.bigStory.sourceUrls.forEach((u) => urls.add(normalizeUrl(u)));
-    if (b.retailTech) b.retailTech.sourceUrls.forEach((u) => urls.add(normalizeUrl(u)));
-    if (b.cpgCorner) b.cpgCorner.sourceUrls.forEach((u) => urls.add(normalizeUrl(u)));
+    if (b.shopFloor) b.shopFloor.sourceUrls.forEach((u) => urls.add(normalizeUrl(u)));
+    if (b.oemCorner) b.oemCorner.sourceUrls.forEach((u) => urls.add(normalizeUrl(u)));
     if (b.dealFlow) b.dealFlow.forEach((d) => urls.add(normalizeUrl(d.sourceUrl)));
     b.quickHits.forEach((q) => urls.add(normalizeUrl(q.sourceUrl)));
     if (b.statOfDay) urls.add(normalizeUrl(b.statOfDay.sourceUrl));
@@ -334,7 +334,7 @@ export async function shipHeldIssue(date: string): Promise<IssueStatus | null> {
   const hold = await getHold(date);
   if (!hold || !hold.html || !hold.final_draft) return null;
   const d = hold.final_draft;
-  const subject = d.subjectCandidates[d.chosenSubjectIndex] ?? d.subjectCandidates[0] ?? "The Morning Shelf";
+  const subject = d.subjectCandidates[d.chosenSubjectIndex] ?? d.subjectCandidates[0] ?? "The Factory Shift";
   const status: IssueStatus = d.isShortForm ? "short_form_shipped" : "shipped";
   const updated = (await sql`
     UPDATE issues

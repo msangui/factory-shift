@@ -21,7 +21,7 @@ export async function GET(_req: Request, { params }: { params: Promise<{ date: s
     status: 200,
     headers: {
       "content-type": "text/html; charset=utf-8",
-      "content-disposition": `inline; filename="morning-shelf-${date}.html"`,
+      "content-disposition": `inline; filename="factory-shift-${date}.html"`,
       "cache-control": "public, max-age=3600",
     },
   });

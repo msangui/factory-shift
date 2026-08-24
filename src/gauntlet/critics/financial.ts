@@ -83,8 +83,8 @@ function collectText(d: GauntletContext["draft"]): [string, string][] {
   if (d.bigStory) {
     out.push(["bigStory.body", d.bigStory.body], ["bigStory.whyItMatters", d.bigStory.whyItMatters]);
   }
-  if (d.retailTech) out.push(["retailTech.body", d.retailTech.body]);
-  if (d.cpgCorner) out.push(["cpgCorner.body", d.cpgCorner.body]);
+  if (d.shopFloor) out.push(["shopFloor.body", d.shopFloor.body]);
+  if (d.oemCorner) out.push(["oemCorner.body", d.oemCorner.body]);
   if (d.dealFlow) d.dealFlow.forEach((b, i) => out.push([`dealFlow[${i}]`, b.text]));
   d.quickHits.forEach((h, i) => out.push([`quickHits[${i}]`, h.text]));
   if (d.statOfDay) out.push(["statOfDay.stat", d.statOfDay.stat], ["statOfDay.context", d.statOfDay.context]);
