@@ -86,32 +86,75 @@ const baseIssueDraftSchema = z.object({
   signOff: z.string().describe("One line of personality."),
 });
 
+function tryParseJson(s: string): unknown {
+  try {
+    return JSON.parse(s);
+  } catch {
+    return undefined;
+  }
+}
+
+/** A value that carries the marker fields every full/short-form draft has. */
+function isDraftLike(o: unknown): o is Record<string, unknown> {
+  return (
+    !!o &&
+    typeof o === "object" &&
+    !Array.isArray(o) &&
+    "subjectCandidates" in o &&
+    "quickHits" in o &&
+    "signOff" in o
+  );
+}
+
 /**
- * Tolerant wrapper: JSON.parse any nested field the model returned as a
- * stringified object/array back into a value before validation, then validate
- * against the real shape. The tool schema the model sees is unchanged — zod
- * emits the inner object schema for a preprocess effect — so this only adds
- * tolerance for that flaky serialization, it never changes what we ask for.
- * Turns a hard AI_NoObjectGeneratedError crash into a silent recovery.
+ * Tolerant wrapper for the two ways Claude's structured-output tool call has
+ * mis-shaped a complete draft in production, both of which otherwise crash the
+ * run with AI_NoObjectGeneratedError:
+ *
+ *   1. a nested field returned as a JSON *string* instead of an object/array
+ *      (e.g. `bigStory: "{ ... }"`);
+ *   2. the *entire* draft nested under a single wrapper key
+ *      (e.g. `{ bigStory: { ...the whole issue... } }`).
+ *
+ * We JSON.parse case 1's strings and unwrap case 2 before validation, then hand
+ * the repaired value to the real schema. The tool schema the model sees is
+ * unchanged (zod emits the inner object schema for a preprocess effect), so this
+ * only adds tolerance for the flaky serialization — it never changes the ask.
+ * Anything unrecognized passes through so the inner schema reports the real
+ * error. Turns a hard crash into a silent recovery on the first attempt.
  */
 export const issueDraftSchema = z.preprocess((val) => {
-  if (!val || typeof val !== "object" || Array.isArray(val)) return val;
-  const obj = val as Record<string, unknown>;
+  let obj = val;
+  if (typeof obj === "string") obj = tryParseJson(obj) ?? obj;
+  if (!obj || typeof obj !== "object" || Array.isArray(obj)) return val;
+  let draft = obj as Record<string, unknown>;
+
+  // (2) Unwrap a draft that got nested under a single wrapper key.
+  if (!isDraftLike(draft)) {
+    for (const key of Object.keys(draft)) {
+      const raw = draft[key];
+      const inner = typeof raw === "string" ? tryParseJson(raw) : raw;
+      if (isDraftLike(inner)) {
+        draft = inner;
+        break;
+      }
+    }
+  }
+
+  // (1) Parse any nested field returned as a stringified object/array.
   let out: Record<string, unknown> | null = null;
   for (const key of NESTED_DRAFT_KEYS) {
-    const v = obj[key];
+    const v = draft[key];
     if (typeof v !== "string") continue;
     const s = v.trim();
     if (s[0] !== "{" && s[0] !== "[") continue;
-    try {
-      const parsed = JSON.parse(s);
-      out ??= { ...obj };
+    const parsed = tryParseJson(s);
+    if (parsed !== undefined) {
+      out ??= { ...draft };
       out[key] = parsed;
-    } catch {
-      // Leave the original string; the inner schema reports the real error.
     }
   }
-  return out ?? val;
+  return out ?? draft;
 }, baseIssueDraftSchema);
 
 export type IssueDraft = z.infer<typeof issueDraftSchema>;
