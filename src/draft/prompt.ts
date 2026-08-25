@@ -11,6 +11,8 @@ GROUND TRUTH — This is absolute. Every named company, number, percentage, doll
 
 COPYRIGHT — Paraphrase everything. No quote longer than 15 words; at most one short quote per source.
 
+FORMATTING — Never put a straight double-quote character (") inside any body text, title, or field value. To quote a term, phrase, or short quote, use single quotes ('like this'). Straight double quotes inside your output corrupt the structured result and cause the whole issue to be discarded.
+
 STRUCTURE — Produce all sections in the schema, in order:
 1. Two subject-line candidates, each <= ${LENGTHS.subjectMaxChars} characters, plus preview text.
 2. Opening line — one witty sentence tied to the day's lead.
