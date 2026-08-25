@@ -5,6 +5,11 @@ import type { Violation } from "@/gauntlet/types";
 import { drafterModel, generateStructured, type TokenLedger } from "@/lib/llm";
 
 const DRAFT_MAX_TOKENS = 6000;
+// The draft is the largest, most deeply nested schema, and Claude's tool call
+// occasionally mis-serializes a section. More attempts (with the escalating
+// temperature in generateStructured) give resampling room to recover before the
+// whole run is held. Critics keep the default 2.
+const DRAFT_ATTEMPTS = 5;
 
 /** Generate the first draft of an issue. Returns the draft and the prompt used. */
 export async function draftIssue(input: {
@@ -23,6 +28,7 @@ export async function draftIssue(input: {
     stage: "draft",
     ledger: input.ledger,
     maxOutputTokens: DRAFT_MAX_TOKENS,
+    attempts: DRAFT_ATTEMPTS,
   });
   // Force the short-form flag to match what ingestion decided.
   draft.isShortForm = input.ingest.shortForm;
@@ -50,6 +56,7 @@ export async function reviseIssue(input: {
     stage: "revise",
     ledger: input.ledger,
     maxOutputTokens: DRAFT_MAX_TOKENS,
+    attempts: DRAFT_ATTEMPTS,
   });
   draft.isShortForm = input.shortForm;
   return draft;

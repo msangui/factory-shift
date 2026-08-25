@@ -77,11 +77,20 @@ export async function generateStructured<T>(opts: {
   maxOutputTokens?: number;
   /** How many times to try before giving up (default 2). */
   attempts?: number;
+  /** Temperature for the first attempt; later attempts escalate from here. */
+  baseTemperature?: number;
 }): Promise<T> {
   const maxAttempts = opts.attempts ?? 2;
+  const baseTemp = opts.baseTemperature ?? 0.4;
   let lastErr: unknown;
 
   for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+    // Escalate temperature on each retry. For a large nested schema, Claude's
+    // tool call sometimes mis-serializes a section (emits a nested object as a
+    // string, or wraps the whole draft under one key) — and at a low, near-
+    // deterministic temperature the retries reproduce the same bad output.
+    // Resampling hotter breaks that loop; a clean first attempt never pays it.
+    const temperature = Math.min(1, baseTemp + (attempt - 1) * 0.3);
     try {
       const { object, usage } = await generateObject({
         model: opts.model,
@@ -89,21 +98,21 @@ export async function generateStructured<T>(opts: {
         system: opts.system,
         prompt: opts.prompt,
         maxOutputTokens: opts.maxOutputTokens ?? 4096,
-        // Deterministic-leaning; the drafter overrides via prompt where variety helps.
-        temperature: 0.4,
+        temperature,
       });
 
       const input = usage?.inputTokens ?? 0;
       const output = usage?.outputTokens ?? 0;
       opts.ledger?.add(opts.stage, input, output);
-      log.debug("llm.generateStructured", { stage: opts.stage, input, output, attempt });
+      log.debug("llm.generateStructured", { stage: opts.stage, input, output, attempt, temperature });
 
       return object;
     } catch (err) {
       // Structured-output coercion can transiently fail (truncation, a stray
-      // wrapper). Retry before letting the error propagate to the caller.
+      // wrapper, a mis-serialized section). Retry — hotter — before letting the
+      // error propagate to the caller.
       lastErr = err;
-      log.warn("llm.retry", { stage: opts.stage, attempt, error: String(err) });
+      log.warn("llm.retry", { stage: opts.stage, attempt, temperature, error: String(err) });
     }
   }
 
