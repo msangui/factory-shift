@@ -37,6 +37,23 @@ describe("issueDraftSchema tolerant coercion", () => {
     expect(parsed.ticker.moverNotes.length).toBe(d.ticker.moverNotes.length);
   });
 
+  it("unwraps a whole draft the model nested under a single key", () => {
+    const d = makeValidDraft();
+    const raw = { bigStory: d }; // entire draft mis-wrapped under one key
+    const parsed = issueDraftSchema.parse(raw);
+    expect(parsed.subjectCandidates).toEqual(d.subjectCandidates);
+    expect(parsed.bigStory?.title).toBe(d.bigStory!.title);
+    expect(parsed.quickHits.length).toBe(d.quickHits.length);
+  });
+
+  it("unwraps a whole draft nested AND stringified under a single key", () => {
+    const d = makeValidDraft();
+    const raw = { bigStory: JSON.stringify(d) };
+    const parsed = issueDraftSchema.parse(raw);
+    expect(parsed.signOff).toBe(d.signOff);
+    expect(parsed.oemCorner?.title).toBe(d.oemCorner!.title);
+  });
+
   it("still rejects a genuinely invalid draft (unparseable string stays a string)", () => {
     const d = makeValidDraft();
     const raw = { ...d, bigStory: "{ not valid json" };
