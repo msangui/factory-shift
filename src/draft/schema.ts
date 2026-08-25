@@ -44,7 +44,25 @@ export const statSchema = z.object({
   sourceUrl: z.string().url(),
 });
 
-export const issueDraftSchema = z.object({
+/**
+ * The nested (object/array-typed) draft fields. Claude's structured-output tool
+ * call occasionally serializes one of these as a JSON *string* instead of
+ * inlining the object/array (observed in production on `bigStory`: zod rejects
+ * it with "Expected object, received string", generateObject's repair then
+ * fails with AI_NoObjectGeneratedError, and the whole pipeline run aborts).
+ */
+const NESTED_DRAFT_KEYS = [
+  "subjectCandidates",
+  "ticker",
+  "bigStory",
+  "shopFloor",
+  "oemCorner",
+  "dealFlow",
+  "quickHits",
+  "statOfDay",
+] as const;
+
+const baseIssueDraftSchema = z.object({
   isShortForm: z.boolean(),
   subjectCandidates: z
     .array(z.string())
@@ -67,6 +85,34 @@ export const issueDraftSchema = z.object({
   statOfDay: statSchema.nullable().describe("Null in short-form."),
   signOff: z.string().describe("One line of personality."),
 });
+
+/**
+ * Tolerant wrapper: JSON.parse any nested field the model returned as a
+ * stringified object/array back into a value before validation, then validate
+ * against the real shape. The tool schema the model sees is unchanged — zod
+ * emits the inner object schema for a preprocess effect — so this only adds
+ * tolerance for that flaky serialization, it never changes what we ask for.
+ * Turns a hard AI_NoObjectGeneratedError crash into a silent recovery.
+ */
+export const issueDraftSchema = z.preprocess((val) => {
+  if (!val || typeof val !== "object" || Array.isArray(val)) return val;
+  const obj = val as Record<string, unknown>;
+  let out: Record<string, unknown> | null = null;
+  for (const key of NESTED_DRAFT_KEYS) {
+    const v = obj[key];
+    if (typeof v !== "string") continue;
+    const s = v.trim();
+    if (s[0] !== "{" && s[0] !== "[") continue;
+    try {
+      const parsed = JSON.parse(s);
+      out ??= { ...obj };
+      out[key] = parsed;
+    } catch {
+      // Leave the original string; the inner schema reports the real error.
+    }
+  }
+  return out ?? val;
+}, baseIssueDraftSchema);
 
 export type IssueDraft = z.infer<typeof issueDraftSchema>;
 export type BigStory = z.infer<typeof bigStorySchema>;

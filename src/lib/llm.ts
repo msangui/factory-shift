@@ -65,7 +65,9 @@ export class TokenLedger {
  * model retries on a shape mismatch.
  */
 export async function generateStructured<T>(opts: {
-  schema: z.ZodType<T>;
+  // Input type is `unknown` so schemas wrapped in z.preprocess (whose input is
+  // widened) still infer T from their output shape, not their input.
+  schema: z.ZodType<T, z.ZodTypeDef, unknown>;
   system: string;
   prompt: string;
   model: LanguageModel;
