@@ -7,24 +7,30 @@ name: Daily issue
 # calls and needs longer. GitHub Actions has no such cap. Vercel just hosts the
 # read-only archive; this workflow does the generation and writes to Neon.
 #
-# DST-safe timing: GitHub cron is UTC-only, so we fire two weekday schedules
-# (10:00 and 11:00 UTC) bracketing 06:00 America/New_York across EST/EDT.
+# DST-safe timing: GitHub cron is UTC-only, so we bracket 06:00
+# America/New_York across EST/EDT with weekday schedules, plus a later backstop.
+#
+# Minutes are deliberately OFF the top of the hour. GitHub's scheduler is
+# best-effort and delays or drops runs most heavily at :00 (its peak-load
+# window); scheduling at :13/:41/:37 measurably improves reliability. Observed
+# in this repo's run history: at :00 the runs degraded from on-time to ~10h late
+# to missed entirely on consecutive days.
 #
 # There is deliberately NO wall-clock gate ("only run if it's exactly 06:00
-# ET") on top of that. GitHub scheduled triggers are not guaranteed to fire on
-# time — under load they can be delayed by hours, confirmed in this repo's own
-# run history (both schedules landed ~2-3h late one morning, at ~08:00 ET
-# instead of 06:00). An exact-hour-string gate does not tolerate that: it just
-# silently skips generation for the whole day. Instead we rely entirely on the
-# pipeline's own per-date idempotency (skips if today's issue already exists,
-# unless --force) — whichever of the two schedules fires first each day
-# generates the issue, at whatever hour it actually runs; the other becomes a
-# cheap no-op. See ASSUMPTIONS.md's 2026-08-06 entry.
+# ET") on top of that. Scheduled triggers are not guaranteed to fire on time —
+# under load they can be delayed by hours or dropped. An exact-hour-string gate
+# does not tolerate that: it just silently skips generation for the whole day.
+# Instead we rely entirely on the pipeline's own per-date idempotency (skips if
+# today's issue already exists, unless --force) — whichever schedule fires first
+# each day generates the issue, at whatever hour it actually runs; the rest
+# (including the backstop) become cheap no-ops. See ASSUMPTIONS.md's 2026-08-06
+# entry.
 
 on:
   schedule:
-    - cron: "0 10 * * 1-5" # 06:00 America/New_York during EDT
-    - cron: "0 11 * * 1-5" # 06:00 America/New_York during EST
+    - cron: "13 10 * * 1-5" # ~06:13 America/New_York during EDT
+    - cron: "41 11 * * 1-5" # ~06:41 America/New_York during EST
+    - cron: "37 12 * * 1-5" # backstop ~2h later if the earlier ticks were dropped
   workflow_dispatch:
     inputs:
       force:
