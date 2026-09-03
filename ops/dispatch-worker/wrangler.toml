@@ -1,0 +1,13 @@
+name = "newsletter-dispatcher"
+main = "src/worker.ts"
+compatibility_date = "2025-09-01"
+
+# Cloudflare Cron Triggers run reliably and promptly. Each firing sends a
+# workflow_dispatch to GitHub, which GitHub executes IMMEDIATELY — unlike its
+# `schedule:` queue, which was delivering these repos' runs 4-9 hours late.
+#
+# Weekday mornings, bracketing 06:00 America/New_York across EDT/EST. During EDT
+# 10:05 UTC = 06:05 ET; during EST 11:05 UTC = 06:05 ET. Both fire year-round;
+# the pipeline's per-date idempotency makes the off-season one a ~19s no-op.
+[triggers]
+crons = ["5 10 * * 1-5", "5 11 * * 1-5"]
